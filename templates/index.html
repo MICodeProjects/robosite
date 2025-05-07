@@ -1,0 +1,70 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}Robosite - Home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Robosite</h1>
+        <p class="lead mb-4">
+            The ultimate platform for robotics team management and collaborative learning.
+        </p>
+        <p class="mb-4">
+            Robosite helps robotics team captains assign tasks, share resources, and track progress.
+            Team members can submit their work and access educational materials in a structured, 
+            organized environment.
+        </p>
+        
+        {% if not user.email %}
+        <div class="d-grid gap-2 d-md-flex">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-md-2">Register Now</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">Login</a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2 d-md-flex">
+            {% if user.access >= 2 %}
+            <a href="{{ url_for('to_do') }}" class="btn btn-primary btn-lg me-md-2">My Tasks</a>
+            {% endif %}
+            <a href="{{ url_for('units') }}" class="btn btn-outline-secondary btn-lg">Browse Units</a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6 d-none d-md-block">
+        <div class="text-center">
+            <img src="{{ url_for('static', filename='img/robot.png') }}" alt="Robot Illustration" class="img-fluid" style="max-height: 400px;" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23f0f1f3%22%2F%3E%3Ccircle%20cx%3D%22200%22%20cy%3D%22150%22%20r%3D%2260%22%20fill%3D%22%231865f2%22%2F%3E%3Crect%20x%3D%22140%22%20y%3D%22220%22%20width%3D%22120%22%20height%3D%22140%22%20fill%3D%22%231865f2%22%2F%3E%3Ccircle%20cx%3D%22170%22%20cy%3D%22140%22%20r%3D%2215%22%20fill%3D%22white%22%2F%3E%3Ccircle%20cx%3D%22230%22%20cy%3D%22140%22%20r%3D%2215%22%20fill%3D%22white%22%2F%3E%3Crect%20x%3D%22110%22%20y%3D%22260%22%20width%3D%2230%22%20height%3D%2280%22%20fill%3D%22%231865f2%22%2F%3E%3Crect%20x%3D%22260%22%20y%3D%22260%22%20width%3D%2230%22%20height%3D%2280%22%20fill%3D%22%231865f2%22%2F%3E%3C%2Fsvg%3E'">
+        </div>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people-fill text-primary me-2"></i>Team Collaboration</h5>
+                <p class="card-text">Work together with your team members on robotics projects. Share ideas, provide feedback, and learn from each other.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-journal-text text-primary me-2"></i>Structured Learning</h5>
+                <p class="card-text">Access educational content organized into units and lessons. Learn robotics concepts at your own pace.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check2-square text-primary me-2"></i>Task Management</h5>
+                <p class="card-text">Keep track of assignments from your team captains. Submit your work and get feedback all in one place.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

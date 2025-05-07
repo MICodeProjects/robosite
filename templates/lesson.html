@@ -1,0 +1,95 @@
+{% extends "shared/base.html" %}
+
+{% block title %}{{ lesson.name }} - Robosite{% endblock %}
+
+{% block content %}
+<div class="flex h-screen">
+        <div class="w-64 bg-gray-100 shadow-md overflow-y-auto">
+        <div class="p-4 bg-blue-600 text-white">
+            <h3 class="font-bold text-lg truncate">{{ lesson.name }}</h3>
+            <p class="text-sm text-blue-100">{{ unit.name }}</p>
+        </div>
+        
+        <nav class="p-2">
+            {% if components %}
+                {% for component in components %}
+                <a href="/lesson/{{ lesson.id }}/component/{{ component.id }}" 
+                   class="block p-3 mb-1 rounded transition-colors {% if current_component and current_component.id == component.id %}bg-blue-500 text-white{% else %}hover:bg-gray-200{% endif %}">
+                    <div class="font-medium">{{ component.name }}</div>
+                    <div class="text-xs {% if current_component and current_component.id == component.id %}text-blue-100{% else %}text-gray-500{% endif %}">
+                        {% if component.type == 1 %}
+                            Text
+                        {% elif component.type == 2 %}
+                            Video
+                        {% elif component.type == 3 %}
+                            Quiz
+                        {% elif component.type == 4 %}
+                            Exercise
+                        {% else %}
+                            Material
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="p-4 text-gray-500 italic">No content available for this lesson.</div>
+            {% endif %}
+        </nav>
+        
+        {% if user and user.access >= 3 %}
+        <div class="p-3 border-t border-gray-200">
+            <button id="add-component-btn" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm">
+                Add Component
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+        <div class="flex-1 overflow-y-auto">
+        <div class="container mx-auto p-6">
+            {% if current_component %}
+                <div class="flex justify-between items-start mb-6">
+                    <h1 class="text-2xl font-bold">{{ current_component.name }}</h1>
+                    
+                    {% if user and user.access >= 3 %}
+                    <div class="flex space-x-2">
+                        <button id="edit-component-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
+                            Edit
+                        </button>
+                        <button id="delete-component-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                            Delete
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div id="component-content" class="prose max-w-none">
+                                                {% if current_component.type == 1 %}
+                                                        {{ current_component.content|safe }}
+                        {% elif current_component.type == 2 %}
+                                                        <div class="aspect-w-16 aspect-h-9">
+                                <iframe src="{{ current_component.content }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        {% elif current_component.type == 3 %}
+                                                        <div class="quiz-container" data-quiz="{{ current_component.content }}">
+                                                                <div class="quiz-loading">Loading quiz...</div>
+                            </div>
+                        {% elif current_component.type == 4 %}
+                                                        <div class="exercise-container">
+                                {{ current_component.content|safe }}
+                                
+                                {% if user and user.access >= 2 %}
+                                <div class="mt-6 p-4 bg-gray-50 rounded-md">
+                                    <h3 class="font-medium mb-2">Submit your solution</h3>
+                                    <textarea class="w-full p-2 border rounded" rows="6" placeholder="Enter your solution here..."></textarea>
+                                    <button class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                                        Submit
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                                                        <div class="p-4 bg-gray-100 rounded">
+                                {{ current_component.content|safe }}
+   

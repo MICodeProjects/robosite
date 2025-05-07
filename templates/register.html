@@ -1,0 +1,50 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}Robosite - Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Register for Robosite</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('register') }}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                        <div class="form-text text-muted">We'll never share your email with anyone else.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text text-muted">
+                            <!-- In a real application, you would implement proper password handling -->
+                            Note: For demo purposes, password verification is not implemented.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="team" class="form-label">Team</label>
+                        <select class="form-select" id="team" name="team" required>
+                            <option value="none">No Team (Default)</option>
+                            <option value="phoenixes">Phoenixes</option>
+                            <option value="pigeons">Pigeons</option>
+                            <option value="teacher">Teacher</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

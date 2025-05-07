@@ -1,0 +1,194 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}Robosite - To-Do{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>My Tasks</h1>
+            <div>
+                <button class="btn btn-outline-secondary me-2" id="toggleCompleted">
+                    Show Completed
+                </button>
+                <div class="dropdown d-inline-block">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Sort By
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                        <li><a class="dropdown-item active" href="#">Due Date (Soonest First)</a></li>
+                        <li><a class="dropdown-item" href="#">Due Date (Latest First)</a></li>
+                        <li><a class="dropdown-item" href="#">Assignment Date (Newest First)</a></li>
+                        <li><a class="dropdown-item" href="#">Assignment Date (Oldest First)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if tasks %}
+            <div class="tasks-container">
+                <!-- Due Today -->
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">Due Today</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-card card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Wire the Robot Arm</h5>
+                                    <span class="badge bg-danger">Due Today</span>
+                                </div>
+                                <p class="card-text text-muted">From Unit: Robotics Hardware</p>
+                                <p class="card-text">Connect the wires between the motor controller and the servo motors according to the schematic.</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <span class="text-muted">Assigned: 2 days ago</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm me-2">View Details</button>
+                                        <button class="btn btn-success btn-sm">Submit Work</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Due This Week -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Due This Week</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-card card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Program Basic Movement</h5>
+                                    <span class="badge bg-warning text-dark">Due in 3 days</span>
+                                </div>
+                                <p class="card-text text-muted">From Unit: Programming Basics</p>
+                                <p class="card-text">Write a program that allows the robot to move forward, backward, and turn in place using the command line interface.</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <span class="text-muted">Assigned: 1 week ago</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm me-2">View Details</button>
+                                        <button class="btn btn-success btn-sm">Submit Work</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="task-card card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Sensor Calibration</h5>
+                                    <span class="badge bg-warning text-dark">Due in 4 days</span>
+                                </div>
+                                <p class="card-text text-muted">From Unit: Sensors and Input</p>
+                                <p class="card-text">Calibrate the ultrasonic sensors and document the process including any issues encountered.</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <span class="text-muted">Assigned: 5 days ago</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm me-2">View Details</button>
+                                        <button class="btn btn-success btn-sm">Submit Work</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Due Later -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Due Later</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-card card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Final Project Planning</h5>
+                                    <span class="badge bg-info">Due in 2 weeks</span>
+                                </div>
+                                <p class="card-text text-muted">From Unit: Project Management</p>
+                                <p class="card-text">Create a detailed plan for your final project including materials needed, timeline, and expected challenges.</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <span class="text-muted">Assigned: 2 days ago</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm me-2">View Details</button>
+                                        <button class="btn btn-success btn-sm">Submit Work</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Completed Tasks (hidden by default) -->
+                <div class="card mb-4 completed-tasks d-none">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Completed</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-card card mb-3 task-complete">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Team Introduction</h5>
+                                    <span class="badge bg-success">Completed</span>
+                                </div>
+                                <p class="card-text text-muted">From Unit: Team Building</p>
+                                <p class="card-text">Create a short introduction about yourself and your interest in robotics to share with the team.</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <span class="text-muted">Completed: 1 week ago</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm">View Feedback</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h3 class="mb-3">No Tasks Assigned Yet</h3>
+                    <p class="text-muted mb-4">Looks like you don't have any tasks assigned to you at the moment.</p>
+                    <a href="{{ url_for('units') }}" class="btn btn-primary">Browse Units</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle completed tasks visibility
+    document.getElementById('toggleCompleted').addEventListener('click', function() {
+        const completedTasks = document.querySelector('.completed-tasks');
+        const button = document.getElementById('toggleCompleted');
+        
+        if (completedTasks.classList.contains('d-none')) {
+            completedTasks.classList.remove('d-none');
+            button.textContent = 'Hide Completed';
+        } else {
+            completedTasks.classList.add('d-none');
+            button.textContent = 'Show Completed';
+        }
+    });
+</script>
+{% endblock %}
