@@ -13,10 +13,22 @@ app.secret_key = os.urandom(24)  # For session management
 robosite_db_location = "/models/robosite_db.db"
 
 # Initialize models
-team_model = team_model.Team_Model(robosite_db_location)
-unit_model = unit_model.Unit_Model(robosite_db_location)
-lesson_model = lesson_model.Lesson_Model(robosite_db_location)
-lesson_component_model = lesson_component_model.Lesson_Component_Model(robosite_db_location)
+
+from models.user_model import User_Model
+from models.team_model import Team_Model
+from models.unit_model import Unit_Model
+from models.lesson_model import Lesson_Model
+from models.lesson_component_model import Lesson_Component_Model
+
+def init_databases():
+    """Initialize all database files"""
+    User_Model.initialize_DB('data/users.json')
+    Team_Model.initialize_DB('data/teams.json')
+    Unit_Model.initialize_DB('data/units.json')
+    Lesson_Model.initialize_DB('data/lessons.json')
+    Lesson_Component_Model.initialize_DB('data/lesson_components.json')
+    
+    print("All databases initialized successfully!")
 
 # Middleware to check user access level
 def get_current_user():
@@ -237,4 +249,5 @@ def admin_delete_user(email):
 
 
 if __name__ == '__main__':
+    init_databases()
     app.run(debug=True)

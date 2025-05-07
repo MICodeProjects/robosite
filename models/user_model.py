@@ -25,6 +25,8 @@ class User_Model:
         # Ensure the database exists
         self.initialize_DB('users.json')
     
+
+
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
