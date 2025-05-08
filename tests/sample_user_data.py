@@ -1,0 +1,29 @@
+"""Sample user data for testing"""
+
+SAMPLE_USERS = [
+    {
+        "email": "captain@robotics.com",
+        "team": "phoenixes",
+        "access": 3
+    },
+    {
+        "email": "member1@robotics.com",
+        "team": "phoenixes",
+        "access": 2
+    },
+    {
+        "email": "teacher@robotics.com",
+        "team": "teacher",
+        "access": 3
+    },
+    {
+        "email": "student@robotics.com",
+        "team": "pigeons",
+        "access": 2
+    },
+    {
+        "email": "guest@robotics.com",
+        "team": "none",
+        "access": 1
+    }
+]

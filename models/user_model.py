@@ -26,25 +26,26 @@ class User_Model:
         self.initialize_DB('users.json')
     
 
-
+    @staticmethod
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
-        
+    
         Args:
             DB_name: The name of the database file
         """
         # Create the data directory if it doesn't exist
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
-        
+    
+        # Use the provided DB_name to construct the path
+        self.db_path = os.path.join(self.data_dir, DB_name)
+    
         # Create the users database file if it doesn't exist
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as file:
                 json.dump([], file)
-                
-        print(f"Database initialized: {self.db_path}")
-    
+
     def exists(self, email: str) -> bool:
         """
         Check if a user with the given email exists in the database.

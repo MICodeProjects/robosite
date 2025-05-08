@@ -11,28 +11,28 @@ class Unit_Model:
     """
     
     @staticmethod
-    def initialize_DB(DB_name):
+    def initialize_DB(self, DB_name: str) -> None:
         """
-        Initializes the unit database if it doesn't exist
-        
+        Ensure that the JSON database file exists. If not, create it with an empty list.
+    
         Args:
-            DB_name (str): Name of the database file
-            
-        Returns:
-            bool: True if database was created, False if it already existed
+            DB_name: The name of the database file
         """
-        directory = os.path.dirname(DB_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            
-        if not os.path.exists(DB_name):
-            with open(DB_name, 'w') as file:
+        # Create the data directory if it doesn't exist
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+    
+        # Use the provided DB_name to construct the path
+        self.db_path = os.path.join(self.data_dir, DB_name)
+    
+        # Create the users database file if it doesn't exist
+        if not os.path.exists(self.db_path):
+            with open(self.db_path, 'w') as file:
                 json.dump([], file)
-            return True
-        return False
+
     
     @staticmethod
-    def exists(unit=None, id=None):
+    def exists(self, unit=None, id=None):
         """
         Checks if a unit exists by either name or id
         
@@ -59,7 +59,7 @@ class Unit_Model:
         return False
     
     @staticmethod
-    def create(unit_name):
+    def create(self, unit_name):
         """
         Creates a new unit
         
@@ -96,7 +96,7 @@ class Unit_Model:
         return new_unit
     
     @staticmethod
-    def get(unit=None, id=None):
+    def get(self, unit=None, id=None):
         """
         Gets a unit by name or id
         
@@ -123,7 +123,7 @@ class Unit_Model:
         return None
     
     @staticmethod
-    def get_all():
+    def get_all(self):
         """
         Gets all units
         
@@ -139,7 +139,7 @@ class Unit_Model:
         return units
     
     @staticmethod
-    def update(unit_info):
+    def update(self, unit_info):
         """
         Updates a unit
         
@@ -171,7 +171,7 @@ class Unit_Model:
         return updated_unit
     
     @staticmethod
-    def remove(unit=None, id=None):
+    def remove(self, unit=None, id=None):
         """
         Removes a unit
         

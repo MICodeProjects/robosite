@@ -11,25 +11,25 @@ class Team_Model:
     """
     
     @staticmethod
-    def initialize_DB(DB_name):
+    def initialize_DB(self, DB_name: str) -> None:
         """
-        Initializes the team database if it doesn't exist
-        
+        Ensure that the JSON database file exists. If not, create it with an empty list.
+    
         Args:
-            DB_name (str): Name of the database file
-            
-        Returns:
-            bool: True if database was created, False if it already existed
+            DB_name: The name of the database file
         """
-        directory = os.path.dirname(DB_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            
-        if not os.path.exists(DB_name):
-            with open(DB_name, 'w') as file:
+        # Create the data directory if it doesn't exist
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+    
+        # Use the provided DB_name to construct the path
+        self.db_path = os.path.join(self.data_dir, DB_name)
+    
+        # Create the users database file if it doesn't exist
+        if not os.path.exists(self.db_path):
+            with open(self.db_path, 'w') as file:
                 json.dump([], file)
-            return True
-        return False
+
     
     @staticmethod
     def exists(team=None, id=None):
