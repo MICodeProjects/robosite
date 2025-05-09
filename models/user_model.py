@@ -18,24 +18,26 @@ class User_Model:
     
     def __init__(self):
         """Initialize the User Model with the database file path."""
-        # Set the path to the data directory and database file
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
-        self.db_path = os.path.join(self.data_dir, 'users.json')
+        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.data_dir = os.path.join(self.root_dir, 'data')
+        self.db_path = None  # Will be set in initialize_DB
 
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
     
         Args:
-            DB_name: The name of the database file
+            DB_name: The name of the database file (can be relative or absolute path)
         """
-        # Create the data directory if it doesn't exist
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-    
-        # Use the provided DB_name to construct the path
-        self.db_path = os.path.join(self.data_dir, DB_name)
-    
+        if os.path.isabs(DB_name):
+            self.db_path = DB_name
+        else:
+            # If relative path is provided, make it relative to data directory
+            self.db_path = os.path.join(self.root_dir, DB_name)
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        
         # Create the users database file if it doesn't exist
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as file:

@@ -14,33 +14,39 @@ class Lesson_Model:
         - unit_id: int
     """
     
-    @staticmethod
+    def __init__(self):
+        """Initialize the Lesson Model with the database file path."""
+        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.data_dir = os.path.join(self.root_dir, 'data')
+        self.db_path = None  # Will be set in initialize_DB
+
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
+    
+        Args:
+            DB_name: The name of the database file (can be relative or absolute path)
         """
-        # Create the data directory if it doesn't exist
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-    
-        # Use the provided DB_name to construct the path
-        self.db_path = os.path.join(self.data_dir, DB_name)
-    
+        if os.path.isabs(DB_name):
+            self.db_path = DB_name
+        else:
+            # If relative path is provided, make it relative to data directory
+            self.db_path = os.path.join(self.root_dir, DB_name)
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        
         # Create the database file if it doesn't exist
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as file:
                 json.dump([], file)
 
-    @staticmethod
-    def exists(lesson=None, id=None) -> bool:
+    def exists(self, lesson=None, id=None) -> bool:
         """Checks if a lesson exists by either name or id"""
         if lesson is None and id is None:
             return False
             
-        DB_PATH = 'data/lessons.json'
-        Lesson_Model.initialize_DB(DB_PATH)
-        
-        with open(DB_PATH, 'r') as file:
+        with open(self.db_path, 'r') as file:
             lessons = json.load(file)
             
         for l in lessons:
@@ -49,20 +55,16 @@ class Lesson_Model:
                 
         return False
     
-    @staticmethod
-    def create(lesson_info: Dict) -> Dict:
+    def create(self, lesson_info: Dict) -> Dict:
         """Creates a new lesson"""
         try:
             if 'name' not in lesson_info:
                 return {"status": "error", "data": "Lesson name is required"}
                 
-            if Lesson_Model.exists(lesson=lesson_info['name']):
+            if self.exists(lesson=lesson_info['name']):
                 return {"status": "error", "data": f"Lesson {lesson_info['name']} already exists"}
                 
-            DB_PATH = 'data/lessons.json'
-            Lesson_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             # Generate a new ID
@@ -80,24 +82,20 @@ class Lesson_Model:
             
             lessons.append(new_lesson)
             
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(lessons, file, indent=2)
                 
             return {"status": "success", "data": new_lesson}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def get(lesson=None, id=None) -> Dict:
+    def get(self, lesson=None, id=None) -> Dict:
         """Gets a lesson by name or id"""
         try:
             if lesson is None and id is None:
                 return {"status": "error", "data": "Either lesson name or id must be provided"}
                 
-            DB_PATH = 'data/lessons.json'
-            Lesson_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             for l in lessons:
@@ -108,28 +106,20 @@ class Lesson_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def get_all() -> Dict:
+    def get_all(self) -> Dict:
         """Gets all lessons"""
         try:
-            DB_PATH = 'data/lessons.json'
-            Lesson_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             return {"status": "success", "data": lessons}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def get_by_unit_id(unit_id: int) -> Dict:
+    def get_by_unit_id(self, unit_id: int) -> Dict:
         """Gets all lessons for a specific unit"""
         try:
-            DB_PATH = 'data/lessons.json'
-            Lesson_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             unit_lessons = [lesson for lesson in lessons if lesson['unit_id'] == unit_id]
@@ -137,19 +127,16 @@ class Lesson_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def update(lesson_info: Dict) -> Dict:
+    def update(self, lesson_info: Dict) -> Dict:
         """Updates a lesson"""
         try:
             if 'id' not in lesson_info:
                 return {"status": "error", "data": "Lesson ID is required"}
                 
-            if not Lesson_Model.exists(id=lesson_info['id']):
+            if not self.exists(id=lesson_info['id']):
                 return {"status": "error", "data": f"Lesson with id {lesson_info['id']} not found"}
                 
-            DB_PATH = 'data/lessons.json'
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             for lesson in lessons:
@@ -166,24 +153,20 @@ class Lesson_Model:
                     updated_lesson = lesson
                     break
                     
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(lessons, file, indent=2)
                 
             return {"status": "success", "data": updated_lesson}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def remove(lesson=None, id=None) -> Dict:
+    def remove(self, lesson=None, id=None) -> Dict:
         """Removes a lesson"""
         try:
             if lesson is None and id is None:
                 return {"status": "error", "data": "Either lesson name or id must be provided"}
                 
-            DB_PATH = 'data/lessons.json'
-            Lesson_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 lessons = json.load(file)
                 
             initial_length = len(lessons)
@@ -192,7 +175,7 @@ class Lesson_Model:
             if len(lessons) == initial_length:
                 return {"status": "error", "data": "Lesson not found"}
             
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(lessons, file, indent=2)
                 
             return {"status": "success", "data": "Lesson removed successfully"}

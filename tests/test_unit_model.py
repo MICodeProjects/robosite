@@ -6,10 +6,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import unit_model
 from tests.sample_unit_data import SAMPLE_UNITS
 
-Unit = unit_model.Unit_Model()
+@pytest.fixture
+def unit():
+    """Create a fresh Unit_Model instance for each test"""
+    unit = unit_model.Unit_Model()
+    unit.initialize_DB("data/units.json")
+    return unit
 
 @pytest.fixture
-def setup_unit_data():
+def setup_unit_data(unit):
     """Setup test data before each test"""
     if os.path.exists("data/units.json"):
         os.remove("data/units.json")
@@ -22,9 +27,9 @@ def setup_unit_data():
     if os.path.exists("data/units.json"):
         os.remove("data/units.json")
 
-def test_unit_creation(setup_unit_data):
+def test_unit_creation(unit, setup_unit_data):
     """Test creating a new unit"""
-    result = Unit.create("Machine Learning in Robotics")
+    result = unit.create("Machine Learning in Robotics")
     
     assert result["status"] == "success"
     assert result["data"]["name"] == "Machine Learning in Robotics"
@@ -34,17 +39,17 @@ def test_unit_creation(setup_unit_data):
     
     assert any(u["name"] == "Machine Learning in Robotics" for u in units)
 
-def test_unit_get_by_id(setup_unit_data):
+def test_unit_get_by_id(unit, setup_unit_data):
     """Test retrieving a unit by ID"""
-    result = Unit.get(id=1)
+    result = unit.get(id=1)
     
     assert result["status"] == "success"
     assert result["data"]["name"] == "Introduction to Robotics"
     assert result["data"]["id"] == 1
 
-def test_unit_update(setup_unit_data):
+def test_unit_update(unit, setup_unit_data):
     """Test updating unit information"""
-    result = Unit.update({
+    result = unit.update({
         "id": 2,
         "name": "Python Programming for Robotics"
     })
@@ -52,9 +57,9 @@ def test_unit_update(setup_unit_data):
     assert result["status"] == "success"
     assert result["data"]["name"] == "Python Programming for Robotics"
 
-def test_unit_delete(setup_unit_data):
+def test_unit_delete(unit, setup_unit_data):
     """Test deleting a unit"""
-    result = Unit.remove(id=5)
+    result = unit.remove(id=5)
     
     assert result["status"] == "success"
     
@@ -63,30 +68,30 @@ def test_unit_delete(setup_unit_data):
     
     assert not any(u["id"] == 5 for u in units)
 
-def test_get_all_units(setup_unit_data):
+def test_get_all_units(unit, setup_unit_data):
     """Test retrieving all units"""
-    result = Unit.get_all()
+    result = unit.get_all()
     
     assert result["status"] == "success"
     assert len(result["data"]) == len(SAMPLE_UNITS)
 
-def test_invalid_unit_id(setup_unit_data):
+def test_invalid_unit_id(unit, setup_unit_data):
     """Test getting a nonexistent unit"""
-    result = Unit.get(id=999)
+    result = unit.get(id=999)
     
     assert result["status"] == "error"
     assert "not found" in result["data"]
 
-def test_unit_duplicate_name(setup_unit_data):
+def test_unit_duplicate_name(unit, setup_unit_data):
     """Test creating a unit with existing name"""
-    result = Unit.create("Introduction to Robotics")
+    result = unit.create("Introduction to Robotics")
     
     assert result["status"] == "error"
     assert "already exists" in result["data"]
 
-def test_update_nonexistent_unit(setup_unit_data):
+def test_update_nonexistent_unit(unit, setup_unit_data):
     """Test updating a nonexistent unit"""
-    result = Unit.update({
+    result = unit.update({
         "id": 999,
         "name": "New Name"
     })
@@ -94,9 +99,9 @@ def test_update_nonexistent_unit(setup_unit_data):
     assert result["status"] == "error"
     assert "not found" in result["data"]
 
-def test_unit_order(setup_unit_data):
+def test_unit_order(unit, setup_unit_data):
     """Test units are returned in order by ID"""
-    result = Unit.get_all()
+    result = unit.get_all()
     
     assert result["status"] == "success"
     units = result["data"]

@@ -11,33 +11,39 @@ class Unit_Model:
         - id: int
     """
     
-    @staticmethod
+    def __init__(self):
+        """Initialize the Unit Model with the database file path."""
+        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.data_dir = os.path.join(self.root_dir, 'data')
+        self.db_path = None  # Will be set in initialize_DB
+
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
+    
+        Args:
+            DB_name: The name of the database file (can be relative or absolute path)
         """
-        # Create the data directory if it doesn't exist
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-    
-        # Use the provided DB_name to construct the path
-        self.db_path = os.path.join(self.data_dir, DB_name)
-    
+        if os.path.isabs(DB_name):
+            self.db_path = DB_name
+        else:
+            # If relative path is provided, make it relative to data directory
+            self.db_path = os.path.join(self.root_dir, DB_name)
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        
         # Create the database file if it doesn't exist
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as file:
                 json.dump([], file)
 
-    @staticmethod
-    def exists(unit=None, id=None) -> bool:
+    def exists(self, unit=None, id=None) -> bool:
         """Checks if a unit exists by either name or id"""
         if unit is None and id is None:
             return False
             
-        DB_PATH = 'data/units.json'
-        Unit_Model.initialize_DB(DB_PATH)
-        
-        with open(DB_PATH, 'r') as file:
+        with open(self.db_path, 'r') as file:
             units = json.load(file)
             
         for u in units:
@@ -46,17 +52,13 @@ class Unit_Model:
                 
         return False
     
-    @staticmethod
-    def create(unit_name: str) -> Dict:
+    def create(self, unit_name: str) -> Dict:
         """Creates a new unit"""
         try:
-            if Unit_Model.exists(unit=unit_name):
+            if self.exists(unit=unit_name):
                 return {"status": "error", "data": f"Unit {unit_name} already exists"}
                 
-            DB_PATH = 'data/units.json'
-            Unit_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 units = json.load(file)
                 
             # Generate a new ID
@@ -71,24 +73,20 @@ class Unit_Model:
             
             units.append(new_unit)
             
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(units, file, indent=2)
                 
             return {"status": "success", "data": new_unit}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def get(unit=None, id=None) -> Dict:
+    def get(self, unit=None, id=None) -> Dict:
         """Gets a unit by name or id"""
         try:
             if unit is None and id is None:
                 return {"status": "error", "data": "Either unit name or id must be provided"}
                 
-            DB_PATH = 'data/units.json'
-            Unit_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 units = json.load(file)
                 
             for u in units:
@@ -99,33 +97,26 @@ class Unit_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def get_all() -> Dict:
+    def get_all(self) -> Dict:
         """Gets all units"""
         try:
-            DB_PATH = 'data/units.json'
-            Unit_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 units = json.load(file)
                 
             return {"status": "success", "data": units}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def update(unit_info: Dict) -> Dict:
+    def update(self, unit_info: Dict) -> Dict:
         """Updates a unit"""
         try:
             if 'id' not in unit_info:
                 return {"status": "error", "data": "Unit ID is required"}
                 
-            if not Unit_Model.exists(id=unit_info['id']):
+            if not self.exists(id=unit_info['id']):
                 return {"status": "error", "data": f"Unit with id {unit_info['id']} not found"}
                 
-            DB_PATH = 'data/units.json'
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 units = json.load(file)
                 
             for unit in units:
@@ -135,24 +126,20 @@ class Unit_Model:
                     updated_unit = unit
                     break
                     
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(units, file, indent=2)
                 
             return {"status": "success", "data": updated_unit}
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
-    @staticmethod
-    def remove(unit=None, id=None) -> Dict:
+    def remove(self, unit=None, id=None) -> Dict:
         """Removes a unit"""
         try:
             if unit is None and id is None:
                 return {"status": "error", "data": "Either unit name or id must be provided"}
                 
-            DB_PATH = 'data/units.json'
-            Unit_Model.initialize_DB(DB_PATH)
-            
-            with open(DB_PATH, 'r') as file:
+            with open(self.db_path, 'r') as file:
                 units = json.load(file)
                 
             initial_length = len(units)
@@ -161,7 +148,7 @@ class Unit_Model:
             if len(units) == initial_length:
                 return {"status": "error", "data": "Unit not found"}
             
-            with open(DB_PATH, 'w') as file:
+            with open(self.db_path, 'w') as file:
                 json.dump(units, file, indent=2)
                 
             return {"status": "success", "data": "Unit removed successfully"}
