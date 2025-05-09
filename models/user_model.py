@@ -21,12 +21,7 @@ class User_Model:
         # Set the path to the data directory and database file
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
         self.db_path = os.path.join(self.data_dir, 'users.json')
-        
-        # Ensure the database exists
-        self.initialize_DB('users.json')
-    
 
-    @staticmethod
     def initialize_DB(self, DB_name: str) -> None:
         """
         Ensure that the JSON database file exists. If not, create it with an empty list.
@@ -68,169 +63,135 @@ class User_Model:
         return False
     
     def create(self, user_info: Dict) -> Dict:
-        """
-        Create a new user in the database.
-        
-        Args:
-            user_info: Dictionary containing user information (email, team, access)
+        """Create a new user in the database."""
+        try:
+            # Validate required fields
+            if 'email' not in user_info:
+                return {"status": "error", "data": "Email is required"}
             
-        Returns:
-            Dict: The created user information
+            if 'team' not in user_info:
+                user_info['team'] = 'none'  # Default team
             
-        Raises:
-            ValueError: If the user already exists or required fields are missing
-        """
-        # Validate required fields
-        if 'email' not in user_info:
-            raise ValueError("Email is required")
-        
-        if 'team' not in user_info:
-            user_info['team'] = 'none'  # Default team
-        
-        if 'access' not in user_info:
-            user_info['access'] = 1  # Default access level (guest)
-            
-        # Check valid team options
-        valid_teams = ["phoenixes", "pigeons", "none", "teacher"]
-        if user_info['team'] not in valid_teams:
-            raise ValueError(f"Team must be one of: {', '.join(valid_teams)}")
-            
-        # Check valid access levels
-        valid_access = [1, 2, 3]
-        if user_info['access'] not in valid_access:
-            raise ValueError(f"Access must be one of: {', '.join(map(str, valid_access))}")
-        
-        # Check if user already exists
-        if self.exists(user_info['email']):
-            raise ValueError(f"User with email {user_info['email']} already exists")
-        
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        # Add the new user
-        users.append(user_info)
-        
-        # Save the database
-        with open(self.db_path, 'w') as file:
-            json.dump(users, file, indent=2)
-        
-        return user_info
-    
-    def get(self, email: str) -> Optional[Dict]:
-        """
-        Get a user by email.
-        
-        Args:
-            email: The email of the user to retrieve
-            
-        Returns:
-            Dict: The user information or None if not found
-        """
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        # Find the user
-        for user in users:
-            if user.get('email') == email:
-                return user
-        
-        return None
-    
-    def get_all(self) -> List[Dict]:
-        """
-        Get all users from the database.
-        
-        Returns:
-            List[Dict]: List of all users
-        """
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        return users
-    
-    def update(self, user_info: Dict) -> Optional[Dict]:
-        """
-        Update a user's information.
-        
-        Args:
-            user_info: Dictionary containing updated user information
-            
-        Returns:
-            Dict: The updated user information or None if not found
-            
-        Raises:
-            ValueError: If required fields are missing or invalid
-        """
-        # Validate required fields
-        if 'email' not in user_info:
-            raise ValueError("Email is required")
-        
-        # Check valid team options if provided
-        if 'team' in user_info:
+            if 'access' not in user_info:
+                user_info['access'] = 1  # Default access level (guest)
+                
+            # Check valid team options
             valid_teams = ["phoenixes", "pigeons", "none", "teacher"]
             if user_info['team'] not in valid_teams:
-                raise ValueError(f"Team must be one of: {', '.join(valid_teams)}")
-        
-        # Check valid access levels if provided
-        if 'access' in user_info:
+                return {"status": "error", "data": f"Team must be one of: {', '.join(valid_teams)}"}
+                
+            # Check valid access levels
             valid_access = [1, 2, 3]
             if user_info['access'] not in valid_access:
-                raise ValueError(f"Access must be one of: {', '.join(map(str, valid_access))}")
-        
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        updated_user = None
-        
-        # Find and update the user
-        for i, user in enumerate(users):
-            if user.get('email') == user_info['email']:
-                # Update existing fields
-                for key, value in user_info.items():
-                    users[i][key] = value
-                
-                updated_user = users[i]
-                break
-        
-        # Save the database if a user was updated
-        if updated_user:
-            with open(self.db_path, 'w') as file:
-                json.dump(users, file, indent=2)
-        
-        return updated_user
-    
-    def remove(self, email: str) -> bool:
-        """
-        Remove a user by email.
-        
-        Args:
-            email: The email of the user to remove
+                return {"status": "error", "data": f"Access must be one of: {', '.join(map(str, valid_access))}"}
             
-        Returns:
-            bool: True if user was removed, False if not found
-        """
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        initial_count = len(users)
-        
-        # Remove the user
-        users = [user for user in users if user.get('email') != email]
-        
-        # Check if a user was removed
-        if len(users) < initial_count:
+            # Check if user already exists
+            if self.exists(user_info['email']):
+                return {"status": "error", "data": f"User with email {user_info['email']} already exists"}
+            
+            # Open the database
+            with open(self.db_path, 'r') as file:
+                users = json.load(file)
+            
+            # Add the new user
+            users.append(user_info)
+            
             # Save the database
             with open(self.db_path, 'w') as file:
                 json.dump(users, file, indent=2)
-            return True
-        
-        return False
+            
+            return {"status": "success", "data": user_info}
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
 
+    def get(self, email: str) -> Dict:
+        """Get a user by email."""
+        try:
+            with open(self.db_path, 'r') as file:
+                users = json.load(file)
+            
+            for user in users:
+                if user.get('email') == email:
+                    return {"status": "success", "data": user}
+            
+            return {"status": "error", "data": f"User with email {email} not found"}
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
+
+    def get_all(self) -> Dict:
+        """Get all users from the database."""
+        try:
+            with open(self.db_path, 'r') as file:
+                users = json.load(file)
+            return {"status": "success", "data": users}
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
+    
+    def update(self, user_info: Dict) -> Dict:
+        """Update a user's information."""
+        try:
+            # Validate required fields
+            if 'email' not in user_info:
+                return {"status": "error", "data": "Email is required"}
+            
+            # Check valid team options if provided
+            if 'team' in user_info:
+                valid_teams = ["phoenixes", "pigeons", "none", "teacher"]
+                if user_info['team'] not in valid_teams:
+                    return {"status": "error", "data": f"Team must be one of: {', '.join(valid_teams)}"}
+            
+            # Check valid access levels if provided
+            if 'access' in user_info:
+                valid_access = [1, 2, 3]
+                if user_info['access'] not in valid_access:
+                    return {"status": "error", "data": f"Access must be one of: {', '.join(map(str, valid_access))}"}
+            
+            # Open the database
+            with open(self.db_path, 'r') as file:
+                users = json.load(file)
+            
+            # Find and update the user
+            for i, user in enumerate(users):
+                if user.get('email') == user_info['email']:
+                    # Update existing fields
+                    for key, value in user_info.items():
+                        users[i][key] = value
+                    updated_user = users[i]
+                    
+                    # Save the database
+                    with open(self.db_path, 'w') as file:
+                        json.dump(users, file, indent=2)
+                    
+                    return {"status": "success", "data": updated_user}
+            
+            return {"status": "error", "data": f"User with email {user_info['email']} not found"}
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
+    
+    def remove(self, email: str) -> Dict:
+        """Remove a user by email."""
+        try:
+            # Open the database
+            with open(self.db_path, 'r') as file:
+                users = json.load(file)
+            
+            initial_count = len(users)
+            
+            # Remove the user
+            users = [user for user in users if user.get('email') != email]
+            
+            # Check if a user was removed
+            if len(users) < initial_count:
+                # Save the database
+                with open(self.db_path, 'w') as file:
+                    json.dump(users, file, indent=2)
+                return {"status": "success", "data": "User removed successfully"}
+            
+            return {"status": "error", "data": f"User with email {email} not found"}
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
+
+ 
 
 # Example usage
 if __name__ == "__main__":

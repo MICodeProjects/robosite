@@ -1,8 +1,12 @@
 import pytest
 import os
 import json
-from models.lesson_component_model import LessonComponent
-from .sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from models import lesson_component_model
+from tests.sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
+
+Component = lesson_component_model.Lesson_Component_Model()
 
 @pytest.fixture
 def setup_lesson_component_data():
@@ -21,8 +25,15 @@ def setup_lesson_component_data():
 def test_component_creation(setup_lesson_component_data):
     """Test creating a new lesson component"""
     content = {"text": "New component content"}
-    component = LessonComponent("New Component", 6, 1, 1, json.dumps(content))
-    component.save()
+    result = Component.create({
+        "name": "New Component",
+        "lesson_id": 1,
+        "type": 1,
+        "content": json.dumps(content)
+    })
+    
+    assert result["status"] == "success"
+    assert result["data"]["name"] == "New Component"
     
     with open("data/lesson_components.json", "r") as f:
         components = json.load(f)
@@ -31,25 +42,30 @@ def test_component_creation(setup_lesson_component_data):
 
 def test_component_get_by_id(setup_lesson_component_data):
     """Test retrieving a component by ID"""
-    component = LessonComponent.get_by_id(1)
-    assert component.name == "Introduction Text"
-    assert component.lesson_id == 1
-    assert component.type == 1
+    result = Component.get(id=1)
+    
+    assert result["status"] == "success"
+    assert result["data"]["name"] == "Introduction Text"
+    assert result["data"]["lesson_id"] == 1
+    assert result["data"]["type"] == 1
 
 def test_component_update(setup_lesson_component_data):
     """Test updating component information"""
-    component = LessonComponent.get_by_id(2)
     new_content = {"url": "https://example.com/updated_video"}
-    component.content = json.dumps(new_content)
-    component.save()
+    result = Component.update({
+        "id": 2,
+        "content": json.dumps(new_content)
+    })
     
-    updated_component = LessonComponent.get_by_id(2)
-    assert json.loads(updated_component.content)["url"] == "https://example.com/updated_video"
+    assert result["status"] == "success"
+    content = json.loads(result["data"]["content"])
+    assert content["url"] == "https://example.com/updated_video"
 
 def test_component_delete(setup_lesson_component_data):
     """Test deleting a component"""
-    component = LessonComponent.get_by_id(5)
-    component.delete()
+    result = Component.remove(id=5)
+    
+    assert result["status"] == "success"
     
     with open("data/lesson_components.json", "r") as f:
         components = json.load(f)
@@ -58,22 +74,40 @@ def test_component_delete(setup_lesson_component_data):
 
 def test_get_all_components(setup_lesson_component_data):
     """Test retrieving all components"""
-    components = LessonComponent.get_all()
-    assert len(components) == len(SAMPLE_LESSON_COMPONENTS)
+    result = Component.get_all()
+    
+    assert result["status"] == "success"
+    assert len(result["data"]) == len(SAMPLE_LESSON_COMPONENTS)
 
 def test_get_components_by_lesson(setup_lesson_component_data):
     """Test getting all components for a specific lesson"""
-    lesson_components = LessonComponent.get_by_lesson_id(1)
-    assert all(component.lesson_id == 1 for component in lesson_components)
+    result = Component.get_by_lesson_id(1)
+    
+    assert result["status"] == "success"
+    assert all(component["lesson_id"] == 1 for component in result["data"])
 
 def test_invalid_component_id(setup_lesson_component_data):
     """Test getting a nonexistent component"""
-    with pytest.raises(Exception):
-        LessonComponent.get_by_id(999)
+    result = Component.get(id=999)
+    
+    assert result["status"] == "error"
+    assert "not found" in result["data"]
+
+def test_missing_required_fields(setup_lesson_component_data):
+    """Test creating a component without required fields"""
+    result = Component.create({
+        "name": "Test Component"
+        # Missing lesson_id
+    })
+    
+    assert result["status"] == "error"
+    assert "required" in result["data"].lower()
 
 def test_component_content_validation(setup_lesson_component_data):
     """Test that component content is valid JSON"""
-    component = LessonComponent.get_by_id(1)
-    content = json.loads(component.content)
+    result = Component.get(id=1)
+    
+    assert result["status"] == "success"
+    content = json.loads(result["data"]["content"])
     assert isinstance(content, dict)
     assert "text" in content

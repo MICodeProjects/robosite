@@ -1,8 +1,12 @@
 import pytest
 import os
 import json
-from models.team_model import Team
-from .sample_team_data import SAMPLE_TEAMS
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from models import team_model
+from tests.sample_team_data import SAMPLE_TEAMS
+
+Team = team_model.Team_Model()
 
 @pytest.fixture
 def setup_team_data():
@@ -20,8 +24,11 @@ def setup_team_data():
 
 def test_team_creation(setup_team_data):
     """Test creating a new team"""
-    team = Team("dragons", 6, ["new.member@robotics.com"])
-    team.save()
+    result = Team.create("dragons")
+    
+    assert result["status"] == "success"
+    assert result["data"]["name"] == "dragons"
+    assert result["data"]["members"] == []
     
     with open("data/teams.json", "r") as f:
         teams = json.load(f)
@@ -30,46 +37,59 @@ def test_team_creation(setup_team_data):
 
 def test_team_get_by_name(setup_team_data):
     """Test retrieving a team by name"""
-    team = Team.get_by_name("phoenixes")
-    assert team.name == "phoenixes"
-    assert team.id == 1
-    assert len(team.members) == 2
+    result = Team.get_team(team="phoenixes")
+    
+    assert result["status"] == "success"
+    assert result["data"]["name"] == "phoenixes"
+    assert result["data"]["id"] == 1
+    assert len(result["data"]["members"]) == 2
 
 def test_team_update_members(setup_team_data):
     """Test updating team members"""
-    team = Team.get_by_name("pigeons")
-    team.members.append("new.student@robotics.com")
-    team.save()
+    result = Team.add_user("new.student@robotics.com", team_name="pigeons")
     
-    updated_team = Team.get_by_name("pigeons")
-    assert "new.student@robotics.com" in updated_team.members
-    assert len(updated_team.members) == 2
+    assert result["status"] == "success"
+    assert "new.student@robotics.com" in result["data"]["members"]
+    assert len(result["data"]["members"]) == 2
 
-def test_team_delete(setup_team_data):
-    """Test deleting a team"""
-    team = Team.get_by_name("hawks")
-    team.delete()
+def test_team_delete_member(setup_team_data):
+    """Test removing a member from a team"""
+    result = Team.remove_user("member1@robotics.com", team_name="phoenixes")
     
-    with open("data/teams.json", "r") as f:
-        teams = json.load(f)
-    
-    assert not any(t["name"] == "hawks" for t in teams)
+    assert result["status"] == "success"
+    assert "member1@robotics.com" not in result["data"]["members"]
 
 def test_get_all_teams(setup_team_data):
     """Test retrieving all teams"""
-    teams = Team.get_all()
-    assert len(teams) == len(SAMPLE_TEAMS)
+    result = Team.get_all_teams()
+    
+    assert result["status"] == "success"
+    assert len(result["data"]) == len(SAMPLE_TEAMS)
 
 def test_invalid_team_name(setup_team_data):
     """Test getting a nonexistent team"""
-    with pytest.raises(Exception):
-        Team.get_by_name("nonexistent_team")
-
-def test_remove_team_member(setup_team_data):
-    """Test removing a member from a team"""
-    team = Team.get_by_name("phoenixes")
-    team.remove_member("member1@robotics.com")
-    team.save()
+    result = Team.get_team(team="nonexistent_team")
     
-    updated_team = Team.get_by_name("phoenixes")
-    assert "member1@robotics.com" not in updated_team.members
+    assert result["status"] == "error"
+    assert "not found" in result["data"]
+
+def test_duplicate_team_creation(setup_team_data):
+    """Test creating a team that already exists"""
+    result = Team.create("phoenixes")
+    
+    assert result["status"] == "error"
+    assert "already exists" in result["data"]
+
+def test_add_duplicate_member(setup_team_data):
+    """Test adding a member that's already in the team"""
+    result = Team.add_user("captain@robotics.com", team_name="phoenixes")
+    
+    assert result["status"] == "error"
+    assert "already a member" in result["data"]
+
+def test_remove_nonexistent_member(setup_team_data):
+    """Test removing a member that's not in the team"""
+    result = Team.remove_user("nonexistent@robotics.com", team_name="phoenixes")
+    
+    assert result["status"] == "error"
+    assert "not a member" in result["data"]
