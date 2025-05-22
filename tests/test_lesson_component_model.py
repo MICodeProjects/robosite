@@ -28,7 +28,7 @@ def setup_lesson_component_data(lesson_component):
         os.remove("data/lesson_components.json")
 
 def test_lesson_component_creation(lesson_component, setup_lesson_component_data):
-    """Test creating a new lesson_component"""
+    """Test creating a new replacewithsmthhhelse"""
     content = {"text": "New lesson_component content"}
     result = lesson_component.create({
         "name": "New lesson_component",

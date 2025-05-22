@@ -4,7 +4,7 @@ from typing import Dict
 
 class lesson_component_Model:
     """
-    lesson_component Model - Handles all interactions with the lesson_component database
+    replacewithsmthhhelse Model - Handles all interactions with the replacewithsmthhhelse database
     
     Attributes:
         - name: string
@@ -15,7 +15,7 @@ class lesson_component_Model:
     """
     
     def __init__(self):
-        """Initialize the lesson_component Model with the database file path."""
+        """Initialize the replacewithsmthhhelse Model with the database file path."""
         self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.data_dir = os.path.join(self.root_dir, 'data')
         self.db_path = None  # Will be set in initialize_DB
@@ -56,7 +56,7 @@ class lesson_component_Model:
         return False
     
     def create(self, lesson_component_info: Dict) -> Dict:
-        """Creates a new lesson_component"""
+        """Creates a new replacewithsmthhhelse"""
         try:
             if 'name' not in lesson_component_info or 'lesson_id' not in lesson_component_info:
                 return {"status": "error", "data": "lesson_component name and lesson_id are required"}
@@ -90,7 +90,7 @@ class lesson_component_Model:
             return {"status": "error", "data": str(e)}
     
     def get(self, lesson_component=None, id=None) -> Dict:
-        """Gets a lesson_component by name or id"""
+        """Gets a replacewithsmthhhelse by name or id"""
         try:
             if lesson_component is None and id is None:
                 return {"status": "error", "data": "Either lesson_component name or id must be provided"}

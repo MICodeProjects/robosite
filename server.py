@@ -82,7 +82,7 @@ app.add_url_rule('/lessons/create', 'lessons.create', view_func=lesson_controlle
 app.add_url_rule('/lessons/update', 'lessons.update', view_func=lesson_controller.update, methods=['POST'])
 app.add_url_rule('/lessons/delete', 'lessons.delete', view_func=lesson_controller.delete, methods=['POST'])
 
-# lesson_component routes
+# replacewithsmthhhelse routes
 app.add_url_rule('/lesson_components/<int:lesson_component_id>', 'lesson_components.view', view_func=lesson_component_controller.view)
 app.add_url_rule('/lesson_components/create', 'lesson_components.create', view_func=lesson_component_controller.create, methods=['POST'])
 app.add_url_rule('/lesson_components/update', 'lesson_components.update', view_func=lesson_component_controller.update, methods=['POST'])

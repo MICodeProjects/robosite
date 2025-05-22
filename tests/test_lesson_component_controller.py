@@ -1,10 +1,10 @@
-"""Test the lesson_component Controller."""
+"""Test the replacewithsmthhhelse Controller."""
 import pytest
 from flask import url_for
 from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 def test_lesson_component_view(auth_client, init_controllers):
-    """Test viewing a lesson_component."""
+    """Test viewing a replacewithsmthhhelse."""
     response = auth_client.get('/lesson_components/1')
     assert response.status_code == 200
     

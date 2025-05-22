@@ -14,21 +14,21 @@ class lesson_component_Controller:
         return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
     
     def view(self, lesson_component_id):
-        """Show a specific lesson_component."""
+        """Show a specific replacewithsmthhhelse."""
         current_user = self.get_current_user()
         session['user'] = current_user
         
         # Get the lesson_component
         result = self.lesson_component_model.get(id=lesson_component_id)
         if result['status'] != 'success':
-            flash('lesson_component not found', 'error')
+            flash('replacewithsmthhhelse not found', 'error')
             return redirect(url_for('units.view'))
         
         lesson_component = result['data']
         return render_template('lesson.html', active_lesson_component=lesson_component)
     
     def create(self):
-        """Create a new lesson_component."""
+        """Create a new replacewithsmthhhelse."""
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
             return redirect(url_for('lessons.view', lesson_id=request.form.get('lesson_id')))
@@ -50,14 +50,14 @@ class lesson_component_Controller:
         })
         
         if result['status'] == 'success':
-            flash('lesson_component created successfully', 'success')
+            flash('replacewithsmthhhelse created successfully', 'success')
         else:
             flash(result['data'], 'error')
         
         return redirect(url_for('lessons.view', lesson_id=lesson_id))
     
     def update(self):
-        """Update a lesson_component."""
+        """Update a replacewithsmthhhelse."""
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
             return redirect(url_for('lessons.view', lesson_id=request.form.get('lesson_id')))
@@ -81,14 +81,14 @@ class lesson_component_Controller:
         })
         
         if result['status'] == 'success':
-            flash('lesson_component updated successfully', 'success')
+            flash('replacewithsmthhhelse updated successfully', 'success')
         else:
             flash(result['data'], 'error')
         
         return redirect(url_for('lessons.view', lesson_id=lesson_id))
     
     def delete(self):
-        """Delete a lesson_component."""
+        """Delete a replacewithsmthhhelse."""
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
             return redirect(url_for('lessons.view', lesson_id=request.form.get('lesson_id')))
@@ -97,12 +97,12 @@ class lesson_component_Controller:
         lesson_id = request.form.get('lesson_id')
         
         if not lesson_component_id or not lesson_id:
-            flash('lesson_component ID is required', 'error')
+            flash('replacewithsmthhhelse ID is required', 'error')
             return redirect(url_for('lessons.view', lesson_id=lesson_id))
         
         result = self.lesson_component_model.remove(id=int(lesson_component_id))
         if result['status'] == 'success':
-            flash('lesson_component deleted successfully', 'success')
+            flash('replacewithsmthhhelse deleted successfully', 'success')
         else:
             flash(result['data'], 'error')
         

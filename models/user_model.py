@@ -1,13 +1,15 @@
 import os
-import json
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from .database import Base, User, Team
 
 
 class User_Model:
     """
     User Model class for managing user data in the Robosite application.
     
-    This class handles CRUD operations for User entities stored in users.json.
+    This class handles CRUD operations for User entities stored in SQLite database.
     Each User has email, team, and access level attributes.
     
     Access levels:
@@ -20,28 +22,23 @@ class User_Model:
         """Initialize the User Model with the database file path."""
         self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.data_dir = os.path.join(self.root_dir, 'data')
-        self.db_path = None  # Will be set in initialize_DB
+        self.engine = None
+        self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
-        """
-        Ensure that the JSON database file exists. If not, create it with an empty list.
-    
+        """Initialize SQLite database and ensure tables exist.
+        
         Args:
-            DB_name: The name of the database file (can be relative or absolute path)
+            DB_name: Name of the database file
         """
-        if os.path.isabs(DB_name):
-            self.db_path = DB_name
-        else:
-            # If relative path is provided, make it relative to data directory
-            self.db_path = os.path.join(self.root_dir, DB_name)
+        # Create data directory if it doesn't exist
+        os.makedirs(self.data_dir, exist_ok=True)
         
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        
-        # Create the users database file if it doesn't exist
-        if not os.path.exists(self.db_path):
-            with open(self.db_path, 'w') as file:
-                json.dump([], file)
+        # Initialize database connection
+        db_path = os.path.join(self.data_dir, DB_name)
+        self.engine = create_engine(f'sqlite:///{db_path}')
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
 
     def exists(self, email: str) -> bool:
         """
@@ -53,16 +50,11 @@ class User_Model:
         Returns:
             bool: True if the user exists, False otherwise
         """
-        # Open the database
-        with open(self.db_path, 'r') as file:
-            users = json.load(file)
-        
-        # Check if a user with the given email exists
-        for user in users:
-            if user.get('email') == email:
-                return True
-        
-        return False
+        session = self.Session()
+        try:
+            return session.query(User).filter_by(email=email).first() is not None
+        finally:
+            session.close()
     
     def create(self, user_info: Dict) -> Dict:
         """Create a new user in the database."""
@@ -91,43 +83,72 @@ class User_Model:
             if self.exists(user_info['email']):
                 return {"status": "error", "data": f"User with email {user_info['email']} already exists"}
             
-            # Open the database
-            with open(self.db_path, 'r') as file:
-                users = json.load(file)
-            
-            # Add the new user
-            users.append(user_info)
-            
-            # Save the database
-            with open(self.db_path, 'w') as file:
-                json.dump(users, file, indent=2)
-            
-            return {"status": "success", "data": user_info}
+            session = self.Session()
+            try:
+                # Get or create team
+                team = None
+                if user_info['team'] != 'none':
+                    team = session.query(Team).filter_by(name=user_info['team']).first()
+                    if not team:
+                        team = Team(name=user_info['team'])
+                        session.add(team)
+                        session.flush()  # Get the team ID
+                
+                # Create new user
+                new_user = User(
+                    email=user_info['email'],
+                    team_id=team.id if team else None,
+                    access=user_info['access']
+                )
+                session.add(new_user)
+                session.commit()
+                
+                return {"status": "success", "data": {
+                    "email": new_user.email,
+                    "team": user_info['team'],
+                    "access": new_user.access
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def get(self, email: str) -> Dict:
         """Get a user by email."""
+        session = self.Session()
         try:
-            with open(self.db_path, 'r') as file:
-                users = json.load(file)
-            
-            for user in users:
-                if user.get('email') == email:
-                    return {"status": "success", "data": user}
-            
+            user = session.query(User).filter_by(email=email).first()
+            if user:
+                return {"status": "success", "data": {
+                    "email": user.email,
+                    "team": user.team.name if user.team else "none",
+                    "access": user.access
+                }}
             return {"status": "error", "data": f"User with email {email} not found"}
         except Exception as e:
             return {"status": "error", "data": str(e)}
+        finally:
+            session.close()
 
     def get_all(self) -> Dict:
         """Get all users from the database."""
+        session = self.Session()
         try:
-            with open(self.db_path, 'r') as file:
-                users = json.load(file)
-            return {"status": "success", "data": users}
+            users = session.query(User).all()
+            return {"status": "success", "data": [
+                {
+                    "email": user.email,
+                    "team": user.team.name if user.team else "none",
+                    "access": user.access
+                } for user in users
+            ]}
         except Exception as e:
             return {"status": "error", "data": str(e)}
+        finally:
+            session.close()
     
     def update(self, user_info: Dict) -> Dict:
         """Update a user's information."""
@@ -148,57 +169,61 @@ class User_Model:
                 if user_info['access'] not in valid_access:
                     return {"status": "error", "data": f"Access must be one of: {', '.join(map(str, valid_access))}"}
             
-            # Open the database
-            with open(self.db_path, 'r') as file:
-                users = json.load(file)
-            
-            # Find and update the user
-            for i, user in enumerate(users):
-                if user.get('email') == user_info['email']:
-                    # Update existing fields
-                    for key, value in user_info.items():
-                        users[i][key] = value
-                    updated_user = users[i]
-                    
-                    # Save the database
-                    with open(self.db_path, 'w') as file:
-                        json.dump(users, file, indent=2)
-                    
-                    return {"status": "success", "data": updated_user}
-            
-            return {"status": "error", "data": f"User with email {user_info['email']} not found"}
+            session = self.Session()
+            try:
+                user = session.query(User).filter_by(email=user_info['email']).first()
+                if not user:
+                    return {"status": "error", "data": f"User with email {user_info['email']} not found"}
+                
+                # Update fields
+                if 'access' in user_info:
+                    user.access = user_info['access']
+                if 'team' in user_info:
+                    if user_info['team'] == 'none':
+                        user.team_id = None
+                    else:
+                        team = session.query(Team).filter_by(name=user_info['team']).first()
+                        if not team:
+                            team = Team(name=user_info['team'])
+                            session.add(team)
+                            session.flush()
+                        user.team_id = team.id
+                
+                session.commit()
+                
+                return {"status": "success", "data": {
+                    "email": user.email,
+                    "team": user.team.name if user.team else "none",
+                    "access": user.access
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
     
     def remove(self, email: str) -> Dict:
         """Remove a user by email."""
+        session = self.Session()
         try:
-            # Open the database
-            with open(self.db_path, 'r') as file:
-                users = json.load(file)
-            
-            initial_count = len(users)
-            
-            # Remove the user
-            users = [user for user in users if user.get('email') != email]
-            
-            # Check if a user was removed
-            if len(users) < initial_count:
-                # Save the database
-                with open(self.db_path, 'w') as file:
-                    json.dump(users, file, indent=2)
+            user = session.query(User).filter_by(email=email).first()
+            if user:
+                session.delete(user)
+                session.commit()
                 return {"status": "success", "data": "User removed successfully"}
-            
             return {"status": "error", "data": f"User with email {email} not found"}
         except Exception as e:
+            session.rollback()
             return {"status": "error", "data": str(e)}
-
- 
+        finally:
+            session.close()
 
 # Example usage
 if __name__ == "__main__":
-    # For testing purposes
     user_model = User_Model()
+    user_model.initialize_DB("robosite.db")
     
     # Example: Create a new user
     try:
