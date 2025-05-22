@@ -1,6 +1,6 @@
-"""Sample lesson component data for testing"""
+"""Sample lesson_component data for testing"""
 
-SAMPLE_LESSON_COMPONENTS = [
+SAMPLE_lesson_componentS = [
     {
         "name": "Introduction Text",
         "id": 1,

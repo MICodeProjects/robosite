@@ -1,7 +1,7 @@
 # Robotics Learning Management System
 
 ## Project Overview
-A learning management system designed for robotics education. The system manages users, teams, learning units, lessons, and lesson components through a modular data model with JSON-based storage.
+A learning management system designed for robotics education. The system manages users, teams, learning units, lessons, and lesson_components through a modular data model with JSON-based storage.
 
 ## Folder Structure
 ```
@@ -86,10 +86,10 @@ classDiagram
     }
 ```
 
-### Lesson Component Model
+### lesson_component Model
 ```mermaid
 classDiagram
-    class LessonComponent {
+    class Lessonlesson_component {
         +String name
         +Int id
         +Int type

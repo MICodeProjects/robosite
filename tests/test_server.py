@@ -24,7 +24,7 @@ def test_access_control_member_routes(client):
         '/units',
         '/teams',
         '/lessons/1',
-        '/components/1',
+        '/lesson_components/1',
         '/todo'
     ]
     

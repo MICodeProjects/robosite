@@ -1,9 +1,9 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from models.lesson_model import Lesson_Model
-from models.lesson_component_model import Lesson_Component_Model
+from models.lesson_component_model import lesson_component_Model
 
 class Lesson_Controller:
-    def __init__(self, lesson_model: Lesson_Model, lesson_component_model: Lesson_Component_Model):
+    def __init__(self, lesson_model: Lesson_Model, lesson_component_model: lesson_component_Model):
         self.lesson_model = lesson_model
         self.lesson_component_model = lesson_component_model
     
@@ -16,7 +16,7 @@ class Lesson_Controller:
         return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
     
     def view(self, lesson_id):
-        """Show a specific lesson and its components."""
+        """Show a specific lesson and its lesson_components."""
         current_user = self.get_current_user()
         session['user'] = current_user
         
@@ -28,26 +28,32 @@ class Lesson_Controller:
         
         lesson = lesson_result['data']
         
-        # Get all components for this lesson
-        components_result = self.lesson_component_model.get_by_lesson(lesson_id)
-        components = components_result['data'] if components_result['status'] == 'success' else []
+        # Get all lesson_components for this lesson
+        lesson_components_result = self.lesson_component_model.get_by_lesson(lesson_id)
+        lesson_components = lesson_components_result['data'] if lesson_components_result['status'] == 'success' else []
         
-        return render_template('lesson.html', lesson=lesson, components=components)
-    
+        return render_template('lesson.html', lesson=lesson, lesson_components=lesson_components)
     def create(self):
         """Create a new lesson."""
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
-            return redirect(url_for('units.view'))
+            return redirect('/units')
         
         unit_id = request.form.get('unit_id')
-        lesson_name = request.form.get('lesson_name')
+        title = request.form.get('title')
+        description = request.form.get('description')
+        order = request.form.get('order')
         
-        if not unit_id or not lesson_name:
-            flash('Unit ID and lesson name are required', 'error')
-            return redirect(url_for('units.view'))
+        if not all([unit_id, title, description, order]):
+            flash('All fields are required', 'error')
+            return redirect('/units')
         
-        result = self.lesson_model.create({'name': lesson_name, 'unit_id': int(unit_id)})
+        result = self.lesson_model.create({
+            'unit_id': int(unit_id),
+            'title': title,
+            'description': description,
+            'order': int(order)
+        })
         if result['status'] == 'success':
             flash('Lesson created successfully', 'success')
         else:

@@ -10,19 +10,19 @@ from models.user_model import User_Model
 from models.team_model import Team_Model
 from models.unit_model import Unit_Model
 from models.lesson_model import Lesson_Model
-from models.lesson_component_model import Lesson_Component_Model
+from models.lesson_component_model import lesson_component_Model
 
 from controllers.User_Controller import User_Controller
 from controllers.Team_Controller import Team_Controller
 from controllers.unit_Controller import Unit_Controller
 from controllers.lesson_Controller import Lesson_Controller
-from controllers.lesson_component_Controller import Lesson_Component_Controller
+from controllers.lesson_component_Controller import lesson_component_Controller
 
 from tests.sample_user_data import SAMPLE_USERS
 from tests.sample_team_data import SAMPLE_TEAMS
 from tests.sample_unit_data import SAMPLE_UNITS
 from tests.sample_lesson_data import SAMPLE_LESSONS
-from tests.sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
+from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 @pytest.fixture(autouse=True)
 def setup_test_data():
@@ -36,7 +36,7 @@ def setup_test_data():
         'teams.json': SAMPLE_TEAMS,
         'units.json': SAMPLE_UNITS,
         'lessons.json': SAMPLE_LESSONS,
-        'lesson_components.json': SAMPLE_LESSON_COMPONENTS
+        'lesson_components.json': SAMPLE_lesson_componentS
     }
     
     for filename, data in test_data.items():
@@ -81,7 +81,7 @@ def init_models():
     team_model = Team_Model()
     unit_model = Unit_Model()
     lesson_model = Lesson_Model()
-    lesson_component_model = Lesson_Component_Model()
+    lesson_component_model = lesson_component_Model()
     
     user_model.initialize_DB(DB_name='tests/test_data/users.json')
     team_model.initialize_DB(DB_name='tests/test_data/teams.json')
@@ -104,7 +104,7 @@ def init_controllers(init_models):
     team_controller = Team_Controller(init_models['team_model'], init_models['user_model'])
     unit_controller = Unit_Controller(init_models['unit_model'], init_models['lesson_model'])
     lesson_controller = Lesson_Controller(init_models['lesson_model'], init_models['lesson_component_model'])
-    lesson_component_controller = Lesson_Component_Controller(init_models['lesson_component_model'])
+    lesson_component_controller = lesson_component_Controller(init_models['lesson_component_model'])
     
     return {
         'user_controller': user_controller,

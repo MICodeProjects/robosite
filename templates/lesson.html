@@ -11,19 +11,19 @@
         </div>
         
         <nav class="p-2">
-            {% if components %}
-                {% for component in components %}
-                <a href="/lesson/{{ lesson.id }}/component/{{ component.id }}" 
-                   class="block p-3 mb-1 rounded transition-colors {% if current_component and current_component.id == component.id %}bg-blue-500 text-white{% else %}hover:bg-gray-200{% endif %}">
-                    <div class="font-medium">{{ component.name }}</div>
-                    <div class="text-xs {% if current_component and current_component.id == component.id %}text-blue-100{% else %}text-gray-500{% endif %}">
-                        {% if component.type == 1 %}
+            {% if lesson_components %}
+                {% for lesson_component in lesson_components %}
+                <a href="/lesson/{{ lesson.id }}/lesson_component/{{ lesson_component.id }}" 
+                   class="block p-3 mb-1 rounded transition-colors {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}bg-blue-500 text-white{% else %}hover:bg-gray-200{% endif %}">
+                    <div class="font-medium">{{ lesson_component.name }}</div>
+                    <div class="text-xs {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}text-blue-100{% else %}text-gray-500{% endif %}">
+                        {% if lesson_component.type == 1 %}
                             Text
-                        {% elif component.type == 2 %}
+                        {% elif lesson_component.type == 2 %}
                             Video
-                        {% elif component.type == 3 %}
+                        {% elif lesson_component.type == 3 %}
                             Quiz
-                        {% elif component.type == 4 %}
+                        {% elif lesson_component.type == 4 %}
                             Exercise
                         {% else %}
                             Material
@@ -38,8 +38,8 @@
         
         {% if user and user.access >= 3 %}
         <div class="p-3 border-t border-gray-200">
-            <button id="add-component-btn" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm">
-                Add Component
+            <button id="add-lesson_component-btn" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm">
+                Add lesson_component
             </button>
         </div>
         {% endif %}
@@ -47,16 +47,16 @@
     
         <div class="flex-1 overflow-y-auto">
         <div class="container mx-auto p-6">
-            {% if current_component %}
+            {% if current_lesson_component %}
                 <div class="flex justify-between items-start mb-6">
-                    <h1 class="text-2xl font-bold">{{ current_component.name }}</h1>
+                    <h1 class="text-2xl font-bold">{{ current_lesson_component.name }}</h1>
                     
                     {% if user and user.access >= 3 %}
                     <div class="flex space-x-2">
-                        <button id="edit-component-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
+                        <button id="edit-lesson_component-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
                             Edit
                         </button>
-                        <button id="delete-component-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                        <button id="delete-lesson_component-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
                             Delete
                         </button>
                     </div>
@@ -64,20 +64,20 @@
                 </div>
                 
                 <div class="bg-white rounded-lg shadow-md p-6">
-                    <div id="component-content" class="prose max-w-none">
-                                                {% if current_component.type == 1 %}
-                                                        {{ current_component.content|safe }}
-                        {% elif current_component.type == 2 %}
+                    <div id="lesson_component-content" class="prose max-w-none">
+                                                {% if current_lesson_component.type == 1 %}
+                                                        {{ current_lesson_component.content|safe }}
+                        {% elif current_lesson_component.type == 2 %}
                                                         <div class="aspect-w-16 aspect-h-9">
-                                <iframe src="{{ current_component.content }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                <iframe src="{{ current_lesson_component.content }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
-                        {% elif current_component.type == 3 %}
-                                                        <div class="quiz-container" data-quiz="{{ current_component.content }}">
+                        {% elif current_lesson_component.type == 3 %}
+                                                        <div class="quiz-container" data-quiz="{{ current_lesson_component.content }}">
                                                                 <div class="quiz-loading">Loading quiz...</div>
                             </div>
-                        {% elif current_component.type == 4 %}
+                        {% elif current_lesson_component.type == 4 %}
                                                         <div class="exercise-container">
-                                {{ current_component.content|safe }}
+                                {{ current_lesson_component.content|safe }}
                                 
                                 {% if user and user.access >= 2 %}
                                 <div class="mt-6 p-4 bg-gray-50 rounded-md">
@@ -91,5 +91,5 @@
                             </div>
                         {% else %}
                                                         <div class="p-4 bg-gray-100 rounded">
-                                {{ current_component.content|safe }}
+                                {{ current_lesson_component.content|safe }}
    

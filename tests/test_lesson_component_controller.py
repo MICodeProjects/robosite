@@ -1,73 +1,73 @@
-"""Test the Lesson Component Controller."""
+"""Test the lesson_component Controller."""
 import pytest
 from flask import url_for
-from tests.sample_lesson_component_data import SAMPLE_COMPONENTS
+from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
 
-def test_component_view(auth_client, init_controllers):
-    """Test viewing a lesson component."""
-    response = auth_client.get('/components/1')
+def test_lesson_component_view(auth_client, init_controllers):
+    """Test viewing a lesson_component."""
+    response = auth_client.get('/lesson_components/1')
     assert response.status_code == 200
     
-    # Check if component content is displayed
-    component = next(c for c in SAMPLE_COMPONENTS if c['id'] == 1)
-    assert bytes(component['title'].encode()) in response.data
-    assert bytes(component['content'].encode()) in response.data
+    # Check if lesson_component content is displayed
+    lesson_component = next(c for c in SAMPLE_lesson_componentS if c['id'] == 1)
+    assert bytes(lesson_component['title'].encode()) in response.data
+    assert bytes(lesson_component['content'].encode()) in response.data
 
-def test_create_component(auth_client, init_controllers):
-    """Test component creation."""
-    # Create a new component
-    response = auth_client.post('/components/create', data={
+def test_create_lesson_component(auth_client, init_controllers):
+    """Test lesson_component creation."""
+    # Create a new lesson_component
+    response = auth_client.post('/lesson_components/create', data={
         'lesson_id': '1',
-        'title': 'New Component',
+        'title': 'New lesson_component',
         'content': 'Test content',
         'type': 'text'
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
     
-    # Verify component was created
+    # Verify lesson_component was created
     response = auth_client.get('/lessons/1')
-    assert b'New Component' in response.data
+    assert b'New lesson_component' in response.data
 
-def test_update_component(auth_client, init_controllers):
-    """Test component update."""
-    # Update an existing component
-    response = auth_client.post('/components/update', data={
-        'component_id': '1',
+def test_update_lesson_component(auth_client, init_controllers):
+    """Test lesson_component update."""
+    # Update an existing lesson_component
+    response = auth_client.post('/lesson_components/update', data={
+        'lesson_component_id': '1',
         'lesson_id': '1',
-        'title': 'Updated Component',
+        'title': 'Updated lesson_component',
         'content': 'Updated content',
         'type': 'text'
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
     
-    # Verify component was updated
-    response = auth_client.get('/components/1')
-    assert b'Updated Component' in response.data
+    # Verify lesson_component was updated
+    response = auth_client.get('/lesson_components/1')
+    assert b'Updated lesson_component' in response.data
     assert b'Updated content' in response.data
 
-def test_delete_component(auth_client, init_controllers):
-    """Test component deletion."""
-    # Delete a component
-    response = auth_client.post('/components/delete', data={
-        'component_id': '1',
+def test_delete_lesson_component(auth_client, init_controllers):
+    """Test lesson_component deletion."""
+    # Delete a lesson_component
+    response = auth_client.post('/lesson_components/delete', data={
+        'lesson_component_id': '1',
         'lesson_id': '1'
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
     
-    # Verify component was deleted
+    # Verify lesson_component was deleted
     response = auth_client.get('/lessons/1')
-    component = next(c for c in SAMPLE_COMPONENTS if c['id'] == 1)
-    assert bytes(component['title'].encode()) not in response.data
+    lesson_component = next(c for c in SAMPLE_lesson_componentS if c['id'] == 1)
+    assert bytes(lesson_component['title'].encode()) not in response.data
 
-def test_unauthorized_component_operations(client, init_controllers):
-    """Test unauthorized component operations."""
+def test_unauthorized_lesson_component_operations(client, init_controllers):
+    """Test unauthorized lesson_component operations."""
     operations = [
-        ('/components/create', {'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
-        ('/components/update', {'component_id': '1', 'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
-        ('/components/delete', {'component_id': '1', 'lesson_id': '1'})
+        ('/lesson_components/create', {'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
+        ('/lesson_components/update', {'lesson_component_id': '1', 'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
+        ('/lesson_components/delete', {'lesson_component_id': '1', 'lesson_id': '1'})
     ]
     
     # Test with member access (level 2)
@@ -84,15 +84,15 @@ def test_unauthorized_component_operations(client, init_controllers):
         assert response.status_code == 302
         assert 'index' in response.location
 
-def test_invalid_component_operations(auth_client, init_controllers):
-    """Test invalid component operations."""
-    # Try to view non-existent component
-    response = auth_client.get('/components/999')
+def test_invalid_lesson_component_operations(auth_client, init_controllers):
+    """Test invalid lesson_component operations."""
+    # Try to view non-existent lesson_component
+    response = auth_client.get('/lesson_components/999')
     assert response.status_code == 302
     
-    # Try to update non-existent component
-    response = auth_client.post('/components/update', data={
-        'component_id': '999',
+    # Try to update non-existent lesson_component
+    response = auth_client.post('/lesson_components/update', data={
+        'lesson_component_id': '999',
         'lesson_id': '1',
         'title': 'test',
         'content': 'test',
@@ -100,17 +100,17 @@ def test_invalid_component_operations(auth_client, init_controllers):
     })
     assert response.status_code == 302
     
-    # Try to delete non-existent component
-    response = auth_client.post('/components/delete', data={
-        'component_id': '999',
+    # Try to delete non-existent lesson_component
+    response = auth_client.post('/lesson_components/delete', data={
+        'lesson_component_id': '999',
         'lesson_id': '1'
     })
     assert response.status_code == 302
 
-def test_component_access_levels(client, init_controllers):
-    """Test component access level restrictions."""
+def test_lesson_component_access_levels(client, init_controllers):
+    """Test lesson_component access level restrictions."""
     # Test with no authentication
-    response = client.get('/components/1')
+    response = client.get('/lesson_components/1')
     assert response.status_code == 302
     assert 'login' in response.location
     
@@ -122,7 +122,7 @@ def test_component_access_levels(client, init_controllers):
             'team': 'none',
             'access': 1
         }
-    response = client.get('/components/1')
+    response = client.get('/lesson_components/1')
     assert response.status_code == 302
     assert 'index' in response.location
     
@@ -134,5 +134,5 @@ def test_component_access_levels(client, init_controllers):
             'team': 'phoenixes',
             'access': 2
         }
-    response = client.get('/components/1')
+    response = client.get('/lesson_components/1')
     assert response.status_code == 200

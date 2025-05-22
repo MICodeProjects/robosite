@@ -2,7 +2,7 @@
 import pytest
 from flask import url_for
 from tests.sample_lesson_data import SAMPLE_LESSONS
-from tests.sample_lesson_component_data import SAMPLE_COMPONENTS
+from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 def test_lesson_view(auth_client, init_controllers):
     """Test viewing a lesson."""
@@ -15,26 +15,28 @@ def test_lesson_view(auth_client, init_controllers):
     assert bytes(lesson['title'].encode()) in response.data
     assert bytes(lesson['description'].encode()) in response.data
     
-    # Check if lesson components are displayed
-    lesson_components = [c for c in SAMPLE_COMPONENTS if c['lesson_id'] == 1]
-    for component in lesson_components:
-        assert bytes(component['title'].encode()) in response.data
+    # Check if lesson_components are displayed
+    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+    for lesson_component in lesson_components:
+        assert bytes(lesson_component['title'].encode()) in response.data
 
 def test_create_lesson(auth_client, init_controllers):
     """Test lesson creation."""
     # Create a new lesson
-    response = auth_client.post('/lessons/create', data={
+    new_lesson = {
         'unit_id': '1',
         'title': 'New Lesson',
         'description': 'Test description',
         'order': '3'
-    })
+    }
+    response = auth_client.post('/lessons/create', data=new_lesson)
     assert response.status_code == 302
-    assert 'units' in response.location
+    assert response.location == '/'
     
-    # Verify lesson was created
-    response = auth_client.get('/units')
+    # Verify lesson was created by checking the lesson page
+    response = auth_client.get('/lessons/1')
     assert b'New Lesson' in response.data
+    assert b'Test description' in response.data
 
 def test_update_lesson(auth_client, init_controllers):
     """Test lesson update."""
@@ -108,16 +110,16 @@ def test_invalid_lesson_operations(auth_client, init_controllers):
     assert 'units' in response.location
 
 def test_lesson_component_list(auth_client, init_controllers):
-    """Test lesson component listing."""
+    """Test lesson_component listing."""
     response = auth_client.get('/lessons/1')
     assert response.status_code == 200
     
-    # Check if all components for lesson 1 are listed
-    components = [c for c in SAMPLE_COMPONENTS if c['lesson_id'] == 1]
-    for component in components:
-        assert bytes(component['title'].encode()) in response.data
-        # Check if component type is indicated
-        assert bytes(component['type'].encode()) in response.data
+    # Check if all lesson_components for lesson 1 are listed
+    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+    for lesson_component in lesson_components:
+        assert bytes(lesson_component['title'].encode()) in response.data
+        # Check if lesson_component type is indicated
+        assert bytes(lesson_component['type'].encode()) in response.data
 
 def test_lesson_navigation(auth_client, init_controllers):
     """Test lesson navigation structure."""
@@ -128,13 +130,13 @@ def test_lesson_navigation(auth_client, init_controllers):
     assert b'lesson-sidebar' in response.data
     assert b'lesson-content' in response.data
     
-    # Check if lesson components are in order
-    components = [c for c in SAMPLE_COMPONENTS if c['lesson_id'] == 1]
-    sorted_components = sorted(components, key=lambda x: x['order'])
+    # Check if lesson_components are in order
+    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+    sorted_lesson_components = sorted(lesson_components, key=lambda x: x['order'])
     content = response.data.decode('utf-8')
     last_pos = 0
-    for component in sorted_components:
-        pos = content.find(component['title'])
+    for lesson_component in sorted_lesson_components:
+        pos = content.find(lesson_component['title'])
         assert pos > last_pos
         last_pos = pos
 

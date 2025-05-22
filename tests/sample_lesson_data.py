@@ -2,10 +2,10 @@
 
 SAMPLE_LESSONS = [
     {
-        "name": "What is Robotics?",
+        "title": "What is Robotics?",
         "id": 1,
-        "type": 1,
-        "img": "intro.png",
+        "description": "An introduction to robotics fundamentals",
+        "order": 1,
         "unit_id": 1
     },
     {
