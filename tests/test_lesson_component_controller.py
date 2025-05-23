@@ -1,7 +1,7 @@
 """Test the replacewithsmthhhelse Controller."""
 import pytest
 from flask import url_for
-from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
+from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 def test_lesson_component_view(auth_client, init_controllers):
     """Test viewing a replacewithsmthhhelse."""

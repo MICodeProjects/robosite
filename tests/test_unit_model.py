@@ -4,7 +4,7 @@ import json
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import unit_model
-from tests.sample_unit_data import SAMPLE_UNITS
+from tests.test_data.sample_unit_data import SAMPLE_UNITS
 
 @pytest.fixture
 def unit():

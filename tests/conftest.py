@@ -18,11 +18,11 @@ from controllers.unit_Controller import Unit_Controller
 from controllers.lesson_Controller import Lesson_Controller
 from controllers.lesson_component_Controller import lesson_component_Controller
 
-from tests.sample_user_data import SAMPLE_USERS
-from tests.sample_team_data import SAMPLE_TEAMS
-from tests.sample_unit_data import SAMPLE_UNITS
-from tests.sample_lesson_data import SAMPLE_LESSONS
-from tests.sample_lesson_component_data import SAMPLE_lesson_componentS
+from tests.test_data.sample_user_data import SAMPLE_USERS
+from tests.test_data.sample_team_data import SAMPLE_TEAMS
+from tests.test_data.sample_unit_data import SAMPLE_UNITS
+from tests.test_data.sample_lesson_data import SAMPLE_LESSONS
+from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 @pytest.fixture(autouse=True)
 def setup_test_data():
@@ -100,11 +100,11 @@ def init_models():
 @pytest.fixture
 def init_controllers(init_models):
     """Initialize controller instances with test models."""
-    user_controller = User_Controller(init_models['user_model'])
+    user_controller = User_Controller(init_models['user_model'], init_models('team_model'))
     team_controller = Team_Controller(init_models['team_model'], init_models['user_model'])
     unit_controller = Unit_Controller(init_models['unit_model'], init_models['lesson_model'])
-    lesson_controller = Lesson_Controller(init_models['lesson_model'], init_models['lesson_component_model'])
-    lesson_component_controller = lesson_component_Controller(init_models['lesson_component_model'])
+    lesson_controller = Lesson_Controller(init_models['lesson_model'], init_models['unit_model'], init_models('lesson_component_model'))
+    lesson_component_controller = lesson_component_Controller(init_models['lesson_component_model'], init_models['lesson_model'])
     
     return {
         'user_controller': user_controller,

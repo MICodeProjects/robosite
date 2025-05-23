@@ -1,8 +1,8 @@
 """Test the Team Controller."""
 import pytest
 from flask import url_for
-from tests.sample_team_data import SAMPLE_TEAMS
-from tests.sample_user_data import SAMPLE_USERS
+from tests.test_data.sample_team_data import SAMPLE_TEAMS
+from tests.test_data.sample_user_data import SAMPLE_USERS
 
 def test_team_view(auth_client, init_controllers):
     """Test viewing the teams page."""

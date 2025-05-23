@@ -4,7 +4,7 @@ import json
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import team_model
-from tests.sample_team_data import SAMPLE_TEAMS
+from tests.test_data.sample_team_data import SAMPLE_TEAMS
 
 @pytest.fixture
 def team():

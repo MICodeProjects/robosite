@@ -1,7 +1,7 @@
 """Test the Unit Controller."""
 import pytest
 from flask import url_for
-from tests.sample_unit_data import SAMPLE_UNITS
+from tests.test_data.sample_unit_data import SAMPLE_UNITS
 from tests.sample_lesson_data import SAMPLE_LESSONS
 
 def test_units_view(auth_client, init_controllers):

@@ -41,7 +41,7 @@ class lesson_component_Model:
             with open(self.db_path, 'w') as file:
                 json.dump([], file)
 
-    def exists(self, lesson_component=None, id=None) -> bool:
+    def exists(self, lesson_component=None, id=None) -> Dict:
         """Checks if a lesson_component exists by either name or id"""
         if lesson_component is None and id is None:
             return False
