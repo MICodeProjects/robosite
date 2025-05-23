@@ -38,7 +38,7 @@ class Team_Model:
             with open(self.db_path, 'w') as file:
                 json.dump([], file)
 
-    def exists(self, team=None, id=None):
+    def exists(self, team=None, id=None) -> bool:
         """
         Checks if a team exists by either name or id
         

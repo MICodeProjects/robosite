@@ -83,6 +83,7 @@ flowchart TD
 - Routes:
   - POST `/users/update`: Update user information (Admin only)
   - POST `/users/delete`: Delete user (Admin only)
+
 - Access Control:
   - Updating/deleting users requires admin access (level 3)
   - User data is accessible to all authenticated users
@@ -243,7 +244,7 @@ classDiagram
 
 #### User_Model
 - `initialize_DB(DB_name: str) -> None`: Initialize SQLite database connection
-- `exists(email: str) -> Dict[status, data]`: Check if user exists
+- `exists(email: str) -> bool`: Check if user exists
 - `create(user_info: Dict) -> Dict[status, data]`: Create new user with validation
   - Required fields: email
   - Optional fields: team (default="none"), access (default=1)
@@ -254,7 +255,7 @@ classDiagram
 
 #### Team_Model
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check team existence
+- `exists(team: Optional[str], id: Optional[int]) -> bool`: Check team existence
 - `create(team_name: str) -> Dict[status, data]`: Create new team
 - `add_user(email: str, team_name: Optional[str], team_id: Optional[int]) -> Dict[status, data]`: Add user to team
 - `remove_user(email: str, team_name: Optional[str], team_id: Optional[int]) -> Dict[status, data]`: Remove user from team
@@ -263,7 +264,7 @@ classDiagram
 
 #### Unit_Model
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(unit: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check unit existence
+- `exists(unit: Optional[str], id: Optional[int]) -> bool`: Check unit existence
 - `create(unit_name: str) -> Dict[status, data]`: Create new unit
 - `get(unit: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get unit by name or ID
 - `get_all() -> Dict[status, List[unit]]`: List all units
@@ -272,7 +273,7 @@ classDiagram
 
 #### Lesson_Model
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(lesson: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check lesson existence
+- `exists(lesson: Optional[str], id: Optional[int]) -> bool`: Check lesson existence
 - `create(lesson_info: Dict) -> Dict[status, data]`: Create new lesson
   - Required fields: name, unit_id
   - Optional fields: type, img
@@ -284,7 +285,7 @@ classDiagram
 
 #### Lesson_Component_Model
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check component existence
+- `exists(lesson_component: Optional[str], id: Optional[int]) -> bool`: Check component existence
 - `create(component_info: Dict) -> Dict[status, data]`: Create new component
   - Required fields: name, lesson_id
   - Optional fields: type (default=1), content (default='{}')
