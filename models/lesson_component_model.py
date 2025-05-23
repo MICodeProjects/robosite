@@ -1,10 +1,12 @@
-import json
 import os
-from typing import Dict
+from typing import Dict, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, joinedload
+from .database import Base, LessonComponent
 
 class lesson_component_Model:
     """
-    replacewithsmthhhelse Model - Handles all interactions with the replacewithsmthhhelse database
+    LessonComponent Model - Handles all interactions with the lesson component database using SQLAlchemy
     
     Attributes:
         - name: string
@@ -15,169 +17,218 @@ class lesson_component_Model:
     """
     
     def __init__(self):
-        """Initialize the replacewithsmthhhelse Model with the database file path."""
-        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_dir = os.path.join(self.root_dir, 'data')
-        self.db_path = None  # Will be set in initialize_DB
+        """Initialize the LessonComponent Model."""
+        self.engine = None
+        self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
-        """
-        Ensure that the JSON database file exists. If not, create it with an empty list.
-    
-        Args:
-            DB_name: The name of the database file (can be relative or absolute path)
-        """
+        """Initialize SQLite database connection using SQLAlchemy"""
         if os.path.isabs(DB_name):
-            self.db_path = DB_name
+            db_path = DB_name
         else:
-            # If relative path is provided, make it relative to data directory
-            self.db_path = os.path.join(self.root_dir, DB_name)
-        
+            # Convert JSON path to SQLite path
+            db_dir = os.path.dirname(DB_name)
+            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+            db_path = os.path.join(db_dir, db_name)
+            
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+        # Create database engine
+        db_url = f'sqlite:///{db_path}'
+        self.engine = create_engine(db_url)
         
-        # Create the database file if it doesn't exist
-        if not os.path.exists(self.db_path):
-            with open(self.db_path, 'w') as file:
-                json.dump([], file)
+        # Create tables
+        Base.metadata.create_all(self.engine)
+        
+        # Create session factory
+        self.Session = sessionmaker(bind=self.engine)
 
-    def exists(self, lesson_component=None, id=None) -> bool:
-        """Checks if a lesson_component exists by either name or id"""
+    def exists(self, lesson_component: Optional[str] = None, id: Optional[int] = None) -> bool:
+        """Check if a lesson component exists by name or id"""
         if lesson_component is None and id is None:
             return False
             
-        with open(self.db_path, 'r') as file:
-            lesson_components = json.load(file)
-            
-        for c in lesson_components:
-            if (lesson_component and c.get('name') == lesson_component) or (id and c.get('id') == id):
-                return True
-                
-        return False
-    
-    def create(self, lesson_component_info: Dict) -> Dict:
-        """Creates a new replacewithsmthhhelse"""
+        session = self.Session()
         try:
-            if 'name' not in lesson_component_info or 'lesson_id' not in lesson_component_info:
-                return {"status": "error", "data": "lesson_component name and lesson_id are required"}
+            query = session.query(LessonComponent)
+            if lesson_component:
+                query = query.filter(LessonComponent.name == lesson_component)
+            if id:
+                query = query.filter(LessonComponent.id == id)
+            return session.query(query.exists()).scalar()
+        finally:
+            session.close()
+
+    def create(self, component_info: Dict) -> Dict:
+        """Create a new lesson component"""
+        try:
+            if 'name' not in component_info or 'lesson_id' not in component_info:
+                return {"status": "error", "data": "Component name and lesson_id are required"}
                 
-            if self.exists(lesson_component=lesson_component_info['name']):
-                return {"status": "error", "data": f"lesson_component {lesson_component_info['name']} already exists"}
+            if self.exists(lesson_component=component_info['name']):
+                return {"status": "error", "data": f"Component {component_info['name']} already exists"}
                 
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
+            session = self.Session()
+            try:
+                new_component = LessonComponent(
+                    name=component_info['name'],
+                    lesson_id=component_info['lesson_id'],
+                    type=component_info.get('type', 1),
+                    content=component_info.get('content', '{}')
+                )
                 
-            # Generate a new ID
-            new_id = 1
-            if lesson_components:
-                new_id = max(lesson_component['id'] for lesson_component in lesson_components) + 1
+                session.add(new_component)
+                session.commit()
                 
-            new_lesson_component = {
-                'name': lesson_component_info['name'],
-                'id': new_id,
-                'lesson_id': lesson_component_info['lesson_id'],
-                'type': lesson_component_info.get('type', 1),
-                'content': lesson_component_info.get('content', '{}')
-            }
-            
-            lesson_components.append(new_lesson_component)
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(lesson_components, file, indent=2)
-                
-            return {"status": "success", "data": new_lesson_component}
+                return {"status": "success", "data": {
+                    'id': new_component.id,
+                    'name': new_component.name,
+                    'lesson_id': new_component.lesson_id,
+                    'type': new_component.type,
+                    'content': new_component.content
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def get(self, lesson_component=None, id=None) -> Dict:
-        """Gets a replacewithsmthhhelse by name or id"""
+
+    def get(self, lesson_component: Optional[str] = None, id: Optional[int] = None) -> Dict:
+        """Get a lesson component by name or id"""
         try:
             if lesson_component is None and id is None:
-                return {"status": "error", "data": "Either lesson_component name or id must be provided"}
+                return {"status": "error", "data": "Either component name or id must be provided"}
                 
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
-                
-            for c in lesson_components:
-                if (lesson_component and c['name'] == lesson_component) or (id and c['id'] == id):
-                    return {"status": "success", "data": c}
+            session = self.Session()
+            try:
+                query = session.query(LessonComponent)
+                if lesson_component:
+                    query = query.filter(LessonComponent.name == lesson_component)
+                if id:
+                    query = query.filter(LessonComponent.id == id)
                     
-            return {"status": "error", "data": "lesson_component not found"}
+                result = query.first()
+                if not result:
+                    return {"status": "error", "data": "Component not found"}
+                    
+                return {"status": "success", "data": {
+                    'id': result.id,
+                    'name': result.name,
+                    'lesson_id': result.lesson_id,
+                    'type': result.type,
+                    'content': result.content
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def get_all(self) -> Dict:
-        """Gets all lesson_components"""
+        """Get all lesson components"""
         try:
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
+            session = self.Session()
+            try:
+                components = session.query(LessonComponent).order_by(LessonComponent.id).all()
                 
-            return {"status": "success", "data": lesson_components}
+                component_list = [{
+                    'id': component.id,
+                    'name': component.name,
+                    'lesson_id': component.lesson_id,
+                    'type': component.type,
+                    'content': component.content
+                } for component in components]
+                
+                return {"status": "success", "data": component_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def get_by_lesson_id(self, lesson_id: int) -> Dict:
-        """Gets all lesson_components for a specific lesson"""
+        """Get all components for a specific lesson"""
         try:
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
+            session = self.Session()
+            try:
+                components = session.query(LessonComponent).filter(
+                    LessonComponent.lesson_id == lesson_id
+                ).order_by(LessonComponent.id).all()
                 
-            lesson_components = [lesson_component for lesson_component in lesson_components if lesson_component['lesson_id'] == lesson_id]
-            return {"status": "success", "data": lesson_components}
+                component_list = [{
+                    'id': component.id,
+                    'name': component.name,
+                    'lesson_id': component.lesson_id,
+                    'type': component.type,
+                    'content': component.content
+                } for component in components]
+                
+                return {"status": "success", "data": component_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def update(self, lesson_component_info: Dict) -> Dict:
-        """Updates a lesson_component"""
+            
+    def update(self, component_info: Dict) -> Dict:
+        """Update a lesson component"""
         try:
-            if 'id' not in lesson_component_info:
-                return {"status": "error", "data": "lesson_component ID is required"}
+            if 'id' not in component_info:
+                return {"status": "error", "data": "Component ID is required"}
                 
-            if not self.exists(id=lesson_component_info['id']):
-                return {"status": "error", "data": f"lesson_component with id {lesson_component_info['id']} not found"}
+            if not self.exists(id=component_info['id']):
+                return {"status": "error", "data": f"Component with id {component_info['id']} not found"}
                 
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
+            session = self.Session()
+            try:
+                component = session.query(LessonComponent).filter(
+                    LessonComponent.id == component_info['id']
+                ).first()
                 
-            for lesson_component in lesson_components:
-                if lesson_component['id'] == lesson_component_info['id']:
-                    # Update fields if provided
-                    if 'name' in lesson_component_info:
-                        lesson_component['name'] = lesson_component_info['name']
-                    if 'lesson_id' in lesson_component_info:
-                        lesson_component['lesson_id'] = lesson_component_info['lesson_id']
-                    if 'type' in lesson_component_info:
-                        lesson_component['type'] = lesson_component_info['type']
-                    if 'content' in lesson_component_info:
-                        lesson_component['content'] = lesson_component_info['content']
-                    updated_lesson_component = lesson_component
-                    break
-                    
-            with open(self.db_path, 'w') as file:
-                json.dump(lesson_components, file, indent=2)
+                # Update fields if provided
+                if 'name' in component_info:
+                    component.name = component_info['name']
+                if 'lesson_id' in component_info:
+                    component.lesson_id = component_info['lesson_id']
+                if 'type' in component_info:
+                    component.type = component_info['type']
+                if 'content' in component_info:
+                    component.content = component_info['content']
                 
-            return {"status": "success", "data": updated_lesson_component}
+                session.commit()
+                
+                return {"status": "success", "data": {
+                    'id': component.id,
+                    'name': component.name,
+                    'lesson_id': component.lesson_id,
+                    'type': component.type,
+                    'content': component.content
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def remove(self, lesson_component=None, id=None) -> Dict:
-        """Removes a lesson_component"""
+            
+    def remove(self, lesson_component: Optional[str] = None, id: Optional[int] = None) -> Dict:
+        """Remove a lesson component"""
         try:
             if lesson_component is None and id is None:
-                return {"status": "error", "data": "Either lesson_component name or id must be provided"}
+                return {"status": "error", "data": "Either component name or id must be provided"}
                 
-            with open(self.db_path, 'r') as file:
-                lesson_components = json.load(file)
+            session = self.Session()
+            try:
+                query = session.query(LessonComponent)
+                if lesson_component:
+                    query = query.filter(LessonComponent.name == lesson_component)
+                if id:
+                    query = query.filter(LessonComponent.id == id)
+                    
+                result = query.first()
+                if not result:
+                    return {"status": "error", "data": "Component not found"}
+                    
+                session.delete(result)
+                session.commit()
                 
-            initial_length = len(lesson_components)
-            lesson_components = [c for c in lesson_components if not ((lesson_component and c['name'] == lesson_component) or (id and c['id'] == id))]
-            
-            if len(lesson_components) == initial_length:
-                return {"status": "error", "data": "lesson_component not found"}
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(lesson_components, file, indent=2)
-                
-            return {"status": "success", "data": "lesson_component removed successfully"}
+                return {"status": "success", "data": "Component removed successfully"}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}

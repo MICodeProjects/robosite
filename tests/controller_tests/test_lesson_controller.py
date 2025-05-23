@@ -1,7 +1,7 @@
 """Test the Lesson Controller."""
 import pytest
 from flask import url_for
-from tests.sample_lesson_data import SAMPLE_LESSONS
+from tests.test_data.sample_lesson_data import SAMPLE_LESSONS
 from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 def test_lesson_view(auth_client, init_controllers):

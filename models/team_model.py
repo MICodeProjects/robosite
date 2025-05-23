@@ -1,186 +1,255 @@
-import json
 import os
 from typing import Dict, List, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, joinedload
+from .database import Base, Team, User
 
 class Team_Model:
     """
-    Team Model - Handles all interactions with the team database
-    
-    Attributes:
-        - name: string
-        - id: int
+    Team Model - Handles all interactions with the team database using SQLAlchemy
     """
     
     def __init__(self):
-        """Initialize the Team Model with the database file path."""
-        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_dir = os.path.join(self.root_dir, 'data')
-        self.db_path = None  # Will be set in initialize_DB
+        """Initialize the Team Model."""
+        self.engine = None
+        self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
         """
-        Ensure that the JSON database file exists. If not, create it with an empty list.
-    
-        Args:
-            DB_name: The name of the database file (can be relative or absolute path)
+        Initialize SQLite database connection using SQLAlchemy
         """
         if os.path.isabs(DB_name):
-            self.db_path = DB_name
+            db_path = DB_name
         else:
-            # If relative path is provided, make it relative to data directory
-            self.db_path = os.path.join(self.root_dir, DB_name)
-        
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        
-        # Create the database file if it doesn't exist
-        if not os.path.exists(self.db_path):
-            with open(self.db_path, 'w') as file:
-                json.dump([], file)
-
-    def exists(self, team=None, id=None) -> bool:
-        """
-        Checks if a team exists by either name or id
-        
-        Args:
-            team (str, optional): Team name
-            id (int, optional): Team ID
+            # Convert JSON path to SQLite path
+            db_dir = os.path.dirname(DB_name)
+            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+            db_path = os.path.join(db_dir, db_name)
             
-        Returns:
-            bool: True if team exists, False otherwise
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+        # Create database engine
+        db_url = f'sqlite:///{db_path}'
+        self.engine = create_engine(db_url)
+        
+        # Create tables
+        Base.metadata.create_all(self.engine)
+        
+        # Create session factory
+        self.Session = sessionmaker(bind=self.engine)
+
+    def exists(self, team: Optional[str] = None, id: Optional[int] = None) -> bool:
+        """
+        Check if a team exists by name or id
         """
         if team is None and id is None:
             return False
-            
-        with open(self.db_path, 'r') as file:
-            teams = json.load(file)
-            
-        for t in teams:
-            if (team and t.get('name') == team) or (id and t.get('id') == id):
-                return True
-                
-        return False
-    
+
+        session = self.Session()
+        try:
+            query = session.query(Team)
+            if team:
+                team_exists = query.filter_by(name=team).first() is not None
+            else:
+                team_exists = query.filter_by(id=id).first() is not None
+            return team_exists
+        finally:
+            session.close()
+
     def create(self, team_name: str) -> Dict:
-        """Creates a new team"""
+        """
+        Create a new team
+        """
         try:
             if self.exists(team=team_name):
                 return {"status": "error", "data": f"Team {team_name} already exists"}
-                
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
-                
-            # Generate a new ID
-            new_id = 1
-            if teams:
-                new_id = max(team['id'] for team in teams) + 1
-                
-            new_team = {
-                'name': team_name,
-                'id': new_id,
-                'members': []
-            }
-            
-            teams.append(new_team)
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(teams, file, indent=2)
-                
-            return {"status": "success", "data": new_team}
+
+            session = self.Session()
+            try:
+                new_team = Team(name=team_name)
+                session.add(new_team)
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': new_team.name,
+                    'id': new_team.id,
+                    'members': []
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def add_user(self, email: str, team_name: str = None, team_id: int = None) -> Dict:
-        """Adds a user to a team"""
+        """
+        Add a user to a team
+        """
         try:
             if team_name is None and team_id is None:
                 return {"status": "error", "data": "Either team_name or team_id must be provided"}
-                
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
-                
-            for team in teams:
-                if (team_name and team['name'] == team_name) or (team_id and team['id'] == team_id):
-                    if email not in team['members']:
-                        team['members'].append(email)
-                        with open(self.db_path, 'w') as file:
-                            json.dump(teams, file, indent=2)
-                        return {"status": "success", "data": team}
+
+            session = self.Session()
+            try:
+                # Get the team
+                query = session.query(Team)
+                if team_name:
+                    team = query.filter_by(name=team_name).first()
+                else:
+                    team = query.filter_by(id=team_id).first()
+
+                if not team:
+                    return {"status": "error", "data": "Team not found"}
+
+                # Get the user
+                user = session.query(User).filter_by(email=email).first()
+                if not user:
+                    return {"status": "error", "data": f"User {email} does not exist"}
+
+                if user.team_id == team.id:
                     return {"status": "error", "data": f"User {email} is already a member of this team"}
-                    
-            return {"status": "error", "data": "Team not found"}
+
+                # Update user's team
+                user.team_id = team.id
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': team.name,
+                    'id': team.id,
+                    'members': [user.email for user in team.users]
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def remove_user(self, email: str, team_name: str = None, team_id: int = None) -> Dict:
-        """Removes a user from a team"""
+        """
+        Remove a user from a team
+        """
         try:
             if team_name is None and team_id is None:
                 return {"status": "error", "data": "Either team_name or team_id must be provided"}
-                
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
-                
-            for team in teams:
-                if (team_name and team['name'] == team_name) or (team_id and team['id'] == team_id):
-                    if email in team['members']:
-                        team['members'].remove(email)
-                        with open(self.db_path, 'w') as file:
-                            json.dump(teams, file, indent=2)
-                        return {"status": "success", "data": team}
+
+            session = self.Session()
+            try:
+                # Get the team
+                query = session.query(Team)
+                if team_name:
+                    team = query.filter_by(name=team_name).first()
+                else:
+                    team = query.filter_by(id=team_id).first()
+
+                if not team:
+                    return {"status": "error", "data": "Team not found"}
+
+                # Get the user
+                user = session.query(User).filter_by(email=email).first()
+                if not user:
+                    return {"status": "error", "data": f"User {email} does not exist"}
+
+                if user.team_id != team.id:
                     return {"status": "error", "data": f"User {email} is not a member of this team"}
-                    
-            return {"status": "error", "data": "Team not found"}
+
+                # Remove user from team by setting team_id to None
+                user.team_id = None
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': team.name,
+                    'id': team.id,
+                    'members': [user.email for user in team.users]
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def get_team(self, team: str = None, id: int = None) -> Dict:
-        """Gets a team by name or id"""
+        """
+        Get a team by name or id
+        """
         try:
             if team is None and id is None:
                 return {"status": "error", "data": "Either team name or id must be provided"}
-                
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
-                
-            for t in teams:
-                if (team and t['name'] == team) or (id and t['id'] == id):
-                    return {"status": "success", "data": t}
-                    
-            return {"status": "error", "data": "Team not found"}
+
+            session = self.Session()
+            try:
+                query = session.query(Team).options(joinedload(Team.users))
+                if team:
+                    team_obj = query.filter_by(name=team).first()
+                else:
+                    team_obj = query.filter_by(id=id).first()
+
+                if not team_obj:
+                    return {"status": "error", "data": "Team not found"}
+
+                return {"status": "success", "data": {
+                    'name': team_obj.name,
+                    'id': team_obj.id,
+                    'members': [user.email for user in team_obj.users]
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def get_all_teams(self) -> Dict:
-        """Gets all teams"""
+        """
+        Get all teams
+        """
         try:
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
+            session = self.Session()
+            try:
+                teams = session.query(Team).options(joinedload(Team.users)).all()
                 
-            return {"status": "success", "data": teams}
+                team_list = [{
+                    'name': team.name,
+                    'id': team.id,
+                    'members': [user.email for user in team.users]
+                } for team in teams]
+                
+                return {"status": "success", "data": team_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
     def update_team(self, id: int, new_data: Dict) -> Dict:
-        """Updates a team"""
+        """
+        Update a team
+        """
         try:
-            if not self.exists(id=id):
-                return {"status": "error", "data": f"Team with id {id} not found"}
-                
-            with open(self.db_path, 'r') as file:
-                teams = json.load(file)
-                
-            for team in teams:
-                if team['id'] == id:
-                    # Update only allowed fields
-                    if 'name' in new_data:
-                        team['name'] = new_data['name']
-                    updated_team = team
-                    break
-                    
-            with open(self.db_path, 'w') as file:
-                json.dump(teams, file, indent=2)
-                
-            return {"status": "success", "data": updated_team}
+            session = self.Session()
+            try:
+                team = session.query(Team).options(joinedload(Team.users)).filter_by(id=id).first()
+                if not team:
+                    return {"status": "error", "data": f"Team with id {id} not found"}
+
+                # Update only allowed fields
+                if 'name' in new_data:
+                    team.name = new_data['name']
+
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': team.name,
+                    'id': team.id,
+                    'members': [user.email for user in team.users]
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}

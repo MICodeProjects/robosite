@@ -1,10 +1,12 @@
-import json
 import os
-from typing import Dict
+from typing import Dict, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, joinedload
+from .database import Base, Lesson, LessonComponent
 
 class Lesson_Model:
     """
-    Lesson Model - Handles all interactions with the lesson database
+    Lesson Model - Handles all interactions with the lesson database using SQLAlchemy
     
     Attributes:
         - name: string
@@ -12,51 +14,55 @@ class Lesson_Model:
         - type: int
         - img: string
         - unit_id: int
+        - components: List[LessonComponent]
     """
     
     def __init__(self):
-        """Initialize the Lesson Model with the database file path."""
-        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_dir = os.path.join(self.root_dir, 'data')
-        self.db_path = None  # Will be set in initialize_DB
+        """Initialize the Lesson Model."""
+        self.engine = None
+        self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
-        """
-        Ensure that the JSON database file exists. If not, create it with an empty list.
-    
-        Args:
-            DB_name: The name of the database file (can be relative or absolute path)
-        """
+        """Initialize SQLite database connection using SQLAlchemy"""
         if os.path.isabs(DB_name):
-            self.db_path = DB_name
+            db_path = DB_name
         else:
-            # If relative path is provided, make it relative to data directory
-            self.db_path = os.path.join(self.root_dir, DB_name)
-        
+            # Convert JSON path to SQLite path
+            db_dir = os.path.dirname(DB_name)
+            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+            db_path = os.path.join(db_dir, db_name)
+            
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+        # Create database engine
+        db_url = f'sqlite:///{db_path}'
+        self.engine = create_engine(db_url)
         
-        # Create the database file if it doesn't exist
-        if not os.path.exists(self.db_path):
-            with open(self.db_path, 'w') as file:
-                json.dump([], file)
+        # Create tables
+        Base.metadata.create_all(self.engine)
+        
+        # Create session factory
+        self.Session = sessionmaker(bind=self.engine)
 
-    def exists(self, lesson=None, id=None) -> bool:
-        """Checks if a lesson exists by either name or id"""
+    def exists(self, lesson: Optional[str] = None, id: Optional[int] = None) -> bool:
+        """Check if a lesson exists by name or id"""
         if lesson is None and id is None:
             return False
             
-        with open(self.db_path, 'r') as file:
-            lessons = json.load(file)
-            
-        for l in lessons:
-            if (lesson and l.get('name') == lesson) or (id and l.get('id') == id):
-                return True
-                
-        return False
-    
+        session = self.Session()
+        try:
+            query = session.query(Lesson)
+            if lesson:
+                query = query.filter(Lesson.name == lesson)
+            if id:
+                query = query.filter(Lesson.id == id)
+            return session.query(query.exists()).scalar()
+        finally:
+            session.close()
+
     def create(self, lesson_info: Dict) -> Dict:
-        """Creates a new lesson"""
+        """Create a new lesson"""
         try:
             if 'name' not in lesson_info:
                 return {"status": "error", "data": "Lesson name is required"}
@@ -64,71 +70,122 @@ class Lesson_Model:
             if self.exists(lesson=lesson_info['name']):
                 return {"status": "error", "data": f"Lesson {lesson_info['name']} already exists"}
                 
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
+            session = self.Session()
+            try:
+                new_lesson = Lesson(
+                    name=lesson_info['name'],
+                    type=lesson_info.get('type', 1),
+                    img=lesson_info.get('img', ''),
+                    unit_id=lesson_info.get('unit_id', 0)
+                )
                 
-            # Generate a new ID
-            new_id = 1
-            if lessons:
-                new_id = max(lesson['id'] for lesson in lessons) + 1
+                session.add(new_lesson)
+                session.commit()
                 
-            new_lesson = {
-                'name': lesson_info['name'],
-                'id': new_id,
-                'type': lesson_info.get('type', 1),
-                'img': lesson_info.get('img', ''),
-                'unit_id': lesson_info.get('unit_id', 0)
-            }
-            
-            lessons.append(new_lesson)
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(lessons, file, indent=2)
-                
-            return {"status": "success", "data": new_lesson}
+                return {"status": "success", "data": {
+                    'id': new_lesson.id,
+                    'name': new_lesson.name,
+                    'type': new_lesson.type,
+                    'img': new_lesson.img,
+                    'unit_id': new_lesson.unit_id
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def get(self, lesson=None, id=None) -> Dict:
-        """Gets a lesson by name or id"""
+
+    def get(self, lesson: Optional[str] = None, id: Optional[int] = None) -> Dict:
+        """Get a lesson by name or id"""
         try:
             if lesson is None and id is None:
                 return {"status": "error", "data": "Either lesson name or id must be provided"}
                 
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
-                
-            for l in lessons:
-                if (lesson and l['name'] == lesson) or (id and l['id'] == id):
-                    return {"status": "success", "data": l}
+            session = self.Session()
+            try:
+                query = session.query(Lesson).options(joinedload(Lesson.components))
+                if lesson:
+                    query = query.filter(Lesson.name == lesson)
+                if id:
+                    query = query.filter(Lesson.id == id)
                     
-            return {"status": "error", "data": "Lesson not found"}
+                result = query.first()
+                if not result:
+                    return {"status": "error", "data": "Lesson not found"}
+                    
+                return {"status": "success", "data": {
+                    'id': result.id,
+                    'name': result.name,
+                    'type': result.type,
+                    'img': result.img,
+                    'unit_id': result.unit_id,
+                    'components': [{
+                        'id': comp.id,
+                        'name': comp.name,
+                        'type': comp.type,
+                        'content': comp.content
+                    } for comp in result.components]
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def get_all(self) -> Dict:
-        """Gets all lessons"""
+        """Get all lessons"""
         try:
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
+            session = self.Session()
+            try:
+                lessons = session.query(Lesson).options(joinedload(Lesson.components)).order_by(Lesson.id).all()
                 
-            return {"status": "success", "data": lessons}
+                lesson_list = [{
+                    'id': lesson.id,
+                    'name': lesson.name,
+                    'type': lesson.type,
+                    'img': lesson.img,
+                    'unit_id': lesson.unit_id,
+                    'components': [{
+                        'id': comp.id,
+                        'name': comp.name,
+                        'type': comp.type,
+                        'content': comp.content
+                    } for comp in lesson.components]
+                } for lesson in lessons]
+                
+                return {"status": "success", "data": lesson_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def get_by_unit_id(self, unit_id: int) -> Dict:
-        """Gets all lessons for a specific unit"""
+        """Get all lessons for a specific unit"""
         try:
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
+            session = self.Session()
+            try:
+                lessons = session.query(Lesson).filter(Lesson.unit_id == unit_id).options(joinedload(Lesson.components)).order_by(Lesson.id).all()
                 
-            unit_lessons = [lesson for lesson in lessons if lesson['unit_id'] == unit_id]
-            return {"status": "success", "data": unit_lessons}
+                lesson_list = [{
+                    'id': lesson.id,
+                    'name': lesson.name,
+                    'type': lesson.type,
+                    'img': lesson.img,
+                    'unit_id': lesson.unit_id,
+                    'components': [{
+                        'id': comp.id,
+                        'name': comp.name,
+                        'type': comp.type,
+                        'content': comp.content
+                    } for comp in lesson.components]
+                } for lesson in lessons]
+                
+                return {"status": "success", "data": lesson_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+            
     def update(self, lesson_info: Dict) -> Dict:
-        """Updates a lesson"""
+        """Update a lesson"""
         try:
             if 'id' not in lesson_info:
                 return {"status": "error", "data": "Lesson ID is required"}
@@ -136,48 +193,57 @@ class Lesson_Model:
             if not self.exists(id=lesson_info['id']):
                 return {"status": "error", "data": f"Lesson with id {lesson_info['id']} not found"}
                 
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
+            session = self.Session()
+            try:
+                lesson = session.query(Lesson).filter(Lesson.id == lesson_info['id']).first()
                 
-            for lesson in lessons:
-                if lesson['id'] == lesson_info['id']:
-                    # Update fields if provided
-                    if 'name' in lesson_info:
-                        lesson['name'] = lesson_info['name']
-                    if 'type' in lesson_info:
-                        lesson['type'] = lesson_info['type']
-                    if 'img' in lesson_info:
-                        lesson['img'] = lesson_info['img']
-                    if 'unit_id' in lesson_info:
-                        lesson['unit_id'] = lesson_info['unit_id']
-                    updated_lesson = lesson
-                    break
-                    
-            with open(self.db_path, 'w') as file:
-                json.dump(lessons, file, indent=2)
+                # Update fields if provided
+                if 'name' in lesson_info:
+                    lesson.name = lesson_info['name']
+                if 'type' in lesson_info:
+                    lesson.type = lesson_info['type']
+                if 'img' in lesson_info:
+                    lesson.img = lesson_info['img']
+                if 'unit_id' in lesson_info:
+                    lesson.unit_id = lesson_info['unit_id']
                 
-            return {"status": "success", "data": updated_lesson}
+                session.commit()
+                
+                return {"status": "success", "data": {
+                    'id': lesson.id,
+                    'name': lesson.name,
+                    'type': lesson.type,
+                    'img': lesson.img,
+                    'unit_id': lesson.unit_id
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def remove(self, lesson=None, id=None) -> Dict:
-        """Removes a lesson"""
+            
+    def remove(self, lesson: Optional[str] = None, id: Optional[int] = None) -> Dict:
+        """Remove a lesson"""
         try:
             if lesson is None and id is None:
                 return {"status": "error", "data": "Either lesson name or id must be provided"}
                 
-            with open(self.db_path, 'r') as file:
-                lessons = json.load(file)
+            session = self.Session()
+            try:
+                query = session.query(Lesson)
+                if lesson:
+                    query = query.filter(Lesson.name == lesson)
+                if id:
+                    query = query.filter(Lesson.id == id)
+                    
+                result = query.first()
+                if not result:
+                    return {"status": "error", "data": "Lesson not found"}
+                    
+                session.delete(result)
+                session.commit()
                 
-            initial_length = len(lessons)
-            lessons = [l for l in lessons if not ((lesson and l['name'] == lesson) or (id and l['id'] == id))]
-            
-            if len(lessons) == initial_length:
-                return {"status": "error", "data": "Lesson not found"}
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(lessons, file, indent=2)
-                
-            return {"status": "success", "data": "Lesson removed successfully"}
+                return {"status": "success", "data": "Lesson removed successfully"}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}

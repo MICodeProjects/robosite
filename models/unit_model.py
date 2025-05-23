@@ -1,156 +1,181 @@
-import json
 import os
-from typing import Dict
+from typing import Dict, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, joinedload
+from .database import Base, Unit, Lesson
 
 class Unit_Model:
     """
-    Unit Model - Handles all interactions with the unit database
-    
-    Attributes:
-        - name: string
-        - id: int
+    Unit Model - Handles all interactions with the unit database using SQLAlchemy
     """
     
     def __init__(self):
-        """Initialize the Unit Model with the database file path."""
-        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_dir = os.path.join(self.root_dir, 'data')
-        self.db_path = None  # Will be set in initialize_DB
+        """Initialize the Unit Model."""
+        self.engine = None
+        self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
-        """
-        Ensure that the JSON database file exists. If not, create it with an empty list.
-    
-        Args:
-            DB_name: The name of the database file (can be relative or absolute path)
-        """
+        """Initialize SQLite database connection using SQLAlchemy"""
         if os.path.isabs(DB_name):
-            self.db_path = DB_name
+            db_path = DB_name
         else:
-            # If relative path is provided, make it relative to data directory
-            self.db_path = os.path.join(self.root_dir, DB_name)
-        
+            # Convert JSON path to SQLite path
+            db_dir = os.path.dirname(DB_name)
+            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+            db_path = os.path.join(db_dir, db_name)
+            
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+        # Create database engine
+        db_url = f'sqlite:///{db_path}'
+        self.engine = create_engine(db_url)
         
-        # Create the database file if it doesn't exist
-        if not os.path.exists(self.db_path):
-            with open(self.db_path, 'w') as file:
-                json.dump([], file)
+        # Create tables
+        Base.metadata.create_all(self.engine)
+        
+        # Create session factory
+        self.Session = sessionmaker(bind=self.engine)
 
-    def exists(self, unit=None, id=None) -> bool:
-        """Checks if a unit exists by either name or id"""
+    def exists(self, unit: Optional[str] = None, id: Optional[int] = None) -> bool:
+        """Check if a unit exists by name or id"""
         if unit is None and id is None:
             return False
-            
-        with open(self.db_path, 'r') as file:
-            units = json.load(file)
-            
-        for u in units:
-            if (unit and u.get('name') == unit) or (id and u.get('id') == id):
-                return True
-                
-        return False
-    
+
+        session = self.Session()
+        try:
+            query = session.query(Unit)
+            if unit:
+                unit_exists = query.filter_by(name=unit).first() is not None
+            else:
+                unit_exists = query.filter_by(id=id).first() is not None
+            return unit_exists
+        finally:
+            session.close()
+
     def create(self, unit_name: str) -> Dict:
-        """Creates a new unit"""
+        """Create a new unit"""
         try:
             if self.exists(unit=unit_name):
                 return {"status": "error", "data": f"Unit {unit_name} already exists"}
-                
-            with open(self.db_path, 'r') as file:
-                units = json.load(file)
-                
-            # Generate a new ID
-            new_id = 1
-            if units:
-                new_id = max(unit['id'] for unit in units) + 1
-                
-            new_unit = {
-                'name': unit_name,
-                'id': new_id
-            }
-            
-            units.append(new_unit)
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(units, file, indent=2)
-                
-            return {"status": "success", "data": new_unit}
+
+            session = self.Session()
+            try:
+                new_unit = Unit(name=unit_name)
+                session.add(new_unit)
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': new_unit.name,
+                    'id': new_unit.id
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def get(self, unit=None, id=None) -> Dict:
-        """Gets a unit by name or id"""
+
+    def get(self, unit: str = None, id: int = None) -> Dict:
+        """Get a unit by name or id"""
         try:
             if unit is None and id is None:
                 return {"status": "error", "data": "Either unit name or id must be provided"}
-                
-            with open(self.db_path, 'r') as file:
-                units = json.load(file)
-                
-            for u in units:
-                if (unit and u['name'] == unit) or (id and u['id'] == id):
-                    return {"status": "success", "data": u}
-                    
-            return {"status": "error", "data": "Unit not found"}
+
+            session = self.Session()
+            try:
+                query = session.query(Unit).options(joinedload(Unit.lessons))
+                if unit:
+                    unit_obj = query.filter_by(name=unit).first()
+                else:
+                    unit_obj = query.filter_by(id=id).first()
+
+                if not unit_obj:
+                    return {"status": "error", "data": "Unit not found"}
+
+                return {"status": "success", "data": {
+                    'name': unit_obj.name,
+                    'id': unit_obj.id
+                }}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def get_all(self) -> Dict:
-        """Gets all units"""
+        """Get all units"""
         try:
-            with open(self.db_path, 'r') as file:
-                units = json.load(file)
+            session = self.Session()
+            try:
+                units = session.query(Unit).options(joinedload(Unit.lessons)).order_by(Unit.id).all()
                 
-            return {"status": "success", "data": units}
+                unit_list = [{
+                    'name': unit.name,
+                    'id': unit.id
+                } for unit in units]
+                
+                return {"status": "success", "data": unit_list}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
+
     def update(self, unit_info: Dict) -> Dict:
-        """Updates a unit"""
+        """Update a unit"""
         try:
             if 'id' not in unit_info:
                 return {"status": "error", "data": "Unit ID is required"}
-                
-            if not self.exists(id=unit_info['id']):
-                return {"status": "error", "data": f"Unit with id {unit_info['id']} not found"}
-                
-            with open(self.db_path, 'r') as file:
-                units = json.load(file)
-                
-            for unit in units:
-                if unit['id'] == unit_info['id']:
-                    if 'name' in unit_info:
-                        unit['name'] = unit_info['name']
-                    updated_unit = unit
-                    break
-                    
-            with open(self.db_path, 'w') as file:
-                json.dump(units, file, indent=2)
-                
-            return {"status": "success", "data": updated_unit}
+
+            session = self.Session()
+            try:
+                unit = session.query(Unit).filter_by(id=unit_info['id']).first()
+                if not unit:
+                    return {"status": "error", "data": f"Unit with id {unit_info['id']} not found"}
+
+                # Update allowed fields
+                if 'name' in unit_info:
+                    unit.name = unit_info['name']
+
+                session.commit()
+
+                return {"status": "success", "data": {
+                    'name': unit.name,
+                    'id': unit.id
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
-    
-    def remove(self, unit=None, id=None) -> Dict:
-        """Removes a unit"""
+
+    def remove(self, unit: str = None, id: int = None) -> Dict:
+        """Remove a unit"""
         try:
             if unit is None and id is None:
                 return {"status": "error", "data": "Either unit name or id must be provided"}
-                
-            with open(self.db_path, 'r') as file:
-                units = json.load(file)
-                
-            initial_length = len(units)
-            units = [u for u in units if not ((unit and u['name'] == unit) or (id and u['id'] == id))]
-            
-            if len(units) == initial_length:
-                return {"status": "error", "data": "Unit not found"}
-            
-            with open(self.db_path, 'w') as file:
-                json.dump(units, file, indent=2)
-                
-            return {"status": "success", "data": "Unit removed successfully"}
+
+            session = self.Session()
+            try:
+                query = session.query(Unit)
+                if unit:
+                    unit_obj = query.filter_by(name=unit).first()
+                else:
+                    unit_obj = query.filter_by(id=id).first()
+
+                if not unit_obj:
+                    return {"status": "error", "data": "Unit not found"}
+
+                session.delete(unit_obj)
+                session.commit()
+
+                return {"status": "success", "data": "Unit removed successfully"}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
