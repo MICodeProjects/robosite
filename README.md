@@ -9,6 +9,65 @@ A learning management system designed for robotics education. The system manages
 - Frontend: HTML, CSS
 - Testing: pytest
 
+## Project Structure
+
+```
+robosite/
+├── controllers/           # HTTP request handlers and route logic
+│   ├── User_Controller.py
+│   ├── Team_Controller.py
+│   ├── unit_Controller.py
+│   ├── lesson_Controller.py
+│   └── lesson_component_Controller.py
+│
+├── models/               # Database models and business logic
+│   ├── database.py      # SQLAlchemy models and base configuration
+│   ├── user_model.py
+│   ├── team_model.py
+│   ├── unit_model.py
+│   ├── lesson_model.py
+│   └── lesson_component_model.py
+│
+├── templates/            # Jinja2 HTML templates
+│   ├── shared/          # Common template components
+│   │   ├── base.html    # Base template with common structure
+│   │   └── navbar.html  # Navigation component
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── team.html
+│   ├── units.html
+│   └── lesson.html
+│
+├── static/              # Static assets
+│   └── css/
+│       └── styles.css
+│
+├── tests/               # Test suite
+│   ├── model_tests/    # Unit tests for models
+│   ├── controller_tests/  # Unit tests for controllers
+│   ├── test_data/     # Test fixtures and sample data
+│   └── conftest.py    # pytest configuration and fixtures
+│
+├── data/               # SQLite database and JSON files
+├── server.py          # Flask application entry point
+└── requirements.txt   # Python dependencies
+```
+
+### Key Components
+
+- **controllers/**: Implements the application's business logic and handles HTTP requests. Each controller corresponds to a specific model and handles CRUD operations through Flask routes.
+
+- **models/**: Contains SQLAlchemy models representing database tables and their relationships. Each model implements data access methods and business logic for its respective entity.
+
+- **templates/**: Jinja2 templates for rendering HTML pages. Uses a base template pattern with shared components for consistent layout and navigation.
+
+- **static/**: Houses static assets like CSS files, JavaScript, and images.
+
+- **tests/**: Organized test suite with separate directories for model and controller tests. Includes sample data and fixtures for testing.
+
+- **data/**: Storage location for SQLite database file and JSON data files.
+
 ## Controllers
 
 ### Controller Architecture
@@ -295,41 +354,7 @@ classDiagram
 - `update(component_info: Dict) -> Dict[status, data]`: Update component information
 - `remove(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Delete component
 
-## Development Setup
 
-1. Install required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Initialize database:
-```bash
-python -c "from models.database import Base; from sqlalchemy import create_engine; engine = create_engine('sqlite:///data/robosite.db'); Base.metadata.create_all(engine)"
-```
-
-3. Set up test environment:
-```bash
-python -m pytest tests/ --setup-show
-```
-
-## Running Tests
-
-1. Run all tests:
-```bash
-python -m pytest tests/
-```
-
-2. Run specific test file:
-```bash
-python -m pytest tests/test_user_model.py
-```
-
-3. Run tests with verbose output:
-```bash
-python -m pytest -v tests/
-```
-
-Note: The tests automatically handle test database setup and cleanup. Each test runs with a fresh SQLite test database that is removed after completion.
 
 ## HTML Templates
 
@@ -396,3 +421,57 @@ graph TB
    - Navigation between lessons
    - Component management (admin)
 ```
+
+## Development Setup
+
+1. Install required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Initialize database:
+```bash
+python -c "from models.database import Base; from sqlalchemy import create_engine; engine = create_engine('sqlite:///data/robosite.db'); Base.metadata.create_all(engine)"
+```
+
+3. Set up and verify test environment:
+```bash
+# Show test collection and setup
+python -m pytest tests/ --setup-show
+
+# Test model layer
+python -m pytest tests/model_tests/ -v
+
+# Test controller layer
+python -m pytest tests/controller_tests/ -v
+```
+
+## Running Tests
+
+1. Run all tests:
+```bash
+python -m pytest tests/
+```
+
+2. Run specific test categories:
+```bash
+# Run all model tests
+python -m pytest tests/model_tests/
+
+# Run all controller tests
+python -m pytest tests/controller_tests/
+
+# Run specific model test
+python -m pytest tests/model_tests/test_user_model.py
+
+# Run specific controller test
+python -m pytest tests/controller_tests/test_user_controller.py
+```
+
+3. Run tests with verbose output:
+```bash
+python -m pytest -v tests/
+```
+
+Note: The tests are organized into model_tests/ and controller_tests/ directories for better organization. All tests automatically handle test database setup and cleanup. Each test runs with a fresh SQLite test database that is removed after completion.
+

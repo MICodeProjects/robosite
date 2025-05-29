@@ -1,13 +1,15 @@
 import pytest
+import sqlalchemy
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.database import Base, User, Team
 from models import user_model
-from tests.test_data.sample_user_data import SAMPLE_USERS
-from tests.test_data.sample_team_data import SAMPLE_TEAMS
+from test_data.sample_user_data import SAMPLE_USERS
+from test_data.sample_team_data import SAMPLE_TEAMS
 
 # Use SQLite in-memory database for testing
 TEST_DB = f"sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'test_database.db')}"

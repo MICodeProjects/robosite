@@ -1,5 +1,9 @@
 """Test the Team Controller."""
 import pytest
+import sys
+import os
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 from flask import url_for
 from tests.test_data.sample_team_data import SAMPLE_TEAMS
 from tests.test_data.sample_user_data import SAMPLE_USERS

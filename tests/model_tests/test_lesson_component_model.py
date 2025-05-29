@@ -2,7 +2,8 @@ import pytest
 import os
 import json
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.database import Base, Lesson, LessonComponent

@@ -1,5 +1,9 @@
 """Test the Lesson Controller."""
 import pytest
+import sys
+import os
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 from flask import url_for
 from tests.test_data.sample_lesson_data import SAMPLE_LESSONS
 from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS

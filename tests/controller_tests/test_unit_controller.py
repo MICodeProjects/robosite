@@ -1,8 +1,12 @@
 """Test the Unit Controller."""
 import pytest
+import sys
+import os
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, root_dir)
 from flask import url_for
 from tests.test_data.sample_unit_data import SAMPLE_UNITS
-from tests.sample_lesson_data import SAMPLE_LESSONS
+from tests.test_data.sample_lesson_data import SAMPLE_LESSONS
 
 def test_units_view(auth_client, init_controllers):
     """Test viewing the units page."""
