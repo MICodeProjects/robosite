@@ -1,2 +1,38 @@
-.venv
-__pycache__
+# Virtual Environment
+.venv/
+.vnev/
+venv/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+**/__pycache__/
+**/.pytest_cache/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Database files
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# Log files
+*.log
+
+# Local development configuration
+instance/
+.webassets-cache/
+
+# If using PyCharm
+.idea/
+
+# macOS
+.DS_Store

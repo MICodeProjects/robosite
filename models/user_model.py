@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, User, Team
 
-
 class User_Model:
     """
     User Model class for managing user data in the Robosite application.
@@ -31,18 +30,20 @@ class User_Model:
         Args:
             DB_name: Name of the database file or SQLite URL
         """
-        # Create data directory if it doesn't exist
-        os.makedirs(self.data_dir, exist_ok=True)
-        
-        # Initialize database connection
-        if DB_name.startswith('sqlite:///'):
-            self.engine = create_engine(DB_name)
-        else:
-            db_path = os.path.join(self.data_dir, DB_name)
-            self.engine = create_engine(f'sqlite:///{db_path}')
+        try:
+            # Initialize database connection
+            if DB_name.startswith('sqlite:///'):
+                self.engine = create_engine(DB_name, echo=True)  # Add echo=True for debugging
+            else:
+                db_path = os.path.join(self.data_dir, DB_name)
+                self.engine = create_engine(f'sqlite:///{db_path}', echo=True)
             
-        Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
+            Base.metadata.create_all(self.engine)
+            self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)  # Add expire_on_commit=False
+            
+        except Exception as e:
+            print(f"Error initializing database: {str(e)}")
+            raise
         
     def exists(self, email: str) -> Dict:
         """Check if a user with the given email exists in the database.
@@ -84,8 +85,8 @@ class User_Model:
                 status: "success" or "error"
                 data: User data dict or error message
         """
+
         try:
-            # Validate required fields
             if 'email' not in user_info:
                 return {"status": "error", "data": "Email is required"}
             
@@ -93,20 +94,26 @@ class User_Model:
             exists_result = self.exists(user_info['email'])
             if exists_result["status"] == "error":
                 return exists_result
-            if exists_result["status"]=="success":
+            if exists_result["data"]:  # Check the data field, not status
                 return {"status": "error", "data": f"User with email {user_info['email']} already exists"}
             
             # Validate access level
-            access = user_info.access
+            access = user_info.get('access', 1)  # Default to 1 if not provided
             if access not in [1, 2, 3]:
                 return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
             
+            # Validate team_id exists if provided
             session = self.Session()
             try:
+                if 'team_id' in user_info:
+                    team = session.query(Team).filter_by(id=user_info['team_id']).first()
+                    if not team:
+                        return {"status": "error", "data": f"Team with id {user_info['team_id']} does not exist"}
+                
                 new_user = User(
                     email=user_info['email'],
-                    team_id=user_info['team_id'],
-                    access=user_info['access']
+                    team_id=user_info.get('team_id'),
+                    access=access
                 )
                 session.add(new_user)
                 session.commit()

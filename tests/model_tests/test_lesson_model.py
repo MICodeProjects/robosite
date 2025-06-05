@@ -15,8 +15,9 @@ TEST_DB = "sqlite:///:memory:"
 @pytest.fixture(scope="function")
 def engine():
     """Create a fresh database engine for each test"""
-    engine = create_engine(TEST_DB)
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine(TEST_DB, echo=True)  # Add echo=True for debugging
+    Base.metadata.drop_all(engine)  # Clear all tables
+    Base.metadata.create_all(engine)  # Create fresh tables
     return engine
 
 @pytest.fixture(scope="function")
@@ -24,41 +25,67 @@ def session(engine):
     """Create a new session for each test"""
     Session = sessionmaker(bind=engine)
     session = Session()
-    yield session
-    session.close()
+    return session  # Remove yield as we want setup_lesson_data to manage cleanup
 
 @pytest.fixture(scope="function")
-def lesson(engine):
+def lesson(engine, session):  # Add session dependency
     """Create a fresh Lesson_Model instance for each test"""
     test_lesson = lesson_model.Lesson_Model()
     test_lesson.initialize_DB(TEST_DB)
+    test_lesson.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_lesson
 
-@pytest.fixture
-def setup_lesson_data(session):
+@pytest.fixture(scope="function", autouse=True)
+def setup_lesson_data(engine, session, lesson):  # Add engine and lesson dependencies
     """Setup test data before each test"""
     try:
         # Clean up any existing data
         session.query(LessonComponent).delete()
         session.query(Lesson).delete()
+        session.query(Unit).delete()
+        session.commit()
+        
+        # Create units first (since lessons depend on units)
+        units = {}
+        for lesson_data in SAMPLE_LESSONS:
+            if "unit_id" in lesson_data:
+                unit = Unit(
+                    id=lesson_data["unit_id"],
+                    name=f"Unit {lesson_data['unit_id']}"  # Create placeholder unit names
+                )
+                units[lesson_data["unit_id"]] = unit
+                session.add(unit)
         session.commit()
         
         # Create sample lessons
         for lesson_data in SAMPLE_LESSONS:
             lesson = Lesson(
-                name=lesson_data["name"],
-                type=lesson_data["type"],
-                img=lesson_data["img"],
-                unit_id=lesson_data["unit_id"]
+                name=lesson_data.get("name") or lesson_data.get("name", ""),  # Handle name
+                type=lesson_data.get("type", 1),  # Default type to 1 if not specified
+                img=lesson_data.get("img", ""),  # Handle optional img field
+                unit_id=lesson_data.get("unit_id")  # Handle optional unit relationship
             )
             session.add(lesson)
         session.commit()
+        
+        # Verify data was created
+        units = session.query(Unit).all()
+        lessons = session.query(Lesson).all()
+        print(f"Created {len(units)} units and {len(lessons)} lessons")  # Debug output
+        
         yield
-    finally:
-        # Clean up after each test
+        
+        # Cleanup after test
         session.query(LessonComponent).delete()
         session.query(Lesson).delete()
+        session.query(Unit).delete()
         session.commit()
+        
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
 def test_lesson_creation(lesson, setup_lesson_data):
     """Test creating a new lesson"""

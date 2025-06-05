@@ -63,8 +63,6 @@ def index():
 app.add_url_rule('/teams', 'teams.view', view_func=team_controller.view)
 app.add_url_rule('/teams/create', 'teams.create', view_func=team_controller.create_team, methods=['POST'])
 app.add_url_rule('/teams/update', 'teams.update', view_func=team_controller.update_team, methods=['POST'])
-app.add_url_rule('/teams/add_user', 'teams.add_user', view_func=team_controller.add_user_to_team, methods=['POST'])
-app.add_url_rule('/teams/remove_user', 'teams.remove_user', view_func=team_controller.remove_user_from_team, methods=['POST'])
 
 # User routes
 app.add_url_rule('/users/update', 'users.update', view_func=user_controller.update_user, methods=['POST'])
@@ -82,7 +80,7 @@ app.add_url_rule('/lessons/create', 'lessons.create', view_func=lesson_controlle
 app.add_url_rule('/lessons/update', 'lessons.update', view_func=lesson_controller.update, methods=['POST'])
 app.add_url_rule('/lessons/delete', 'lessons.delete', view_func=lesson_controller.delete, methods=['POST'])
 
-# replacewithsmthhhelse routes
+# lesson component routes
 app.add_url_rule('/lesson_components/<int:lesson_component_id>', 'lesson_components.view', view_func=lesson_component_controller.view)
 app.add_url_rule('/lesson_components/create', 'lesson_components.create', view_func=lesson_component_controller.create, methods=['POST'])
 app.add_url_rule('/lesson_components/update', 'lesson_components.update', view_func=lesson_component_controller.update, methods=['POST'])
@@ -107,7 +105,7 @@ def check_access():
         
     # Routes requiring access level 3
     admin_routes = [
-        'teams.create', 'teams.update', 'teams.add_user', 'teams.remove_user',
+        'teams.create', 'teams.update', 
         'users.update', 'users.delete',
         'units.create', 'units.update', 'units.delete',
         'lessons.create', 'lessons.update', 'lessons.delete',

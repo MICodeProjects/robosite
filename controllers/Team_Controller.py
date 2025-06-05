@@ -75,59 +75,6 @@ class Team_Controller:
         
         return redirect(url_for('teams.view'))
     
-    def add_user_to_team(self):
-        """Add a user to a team."""
-        # Check user has required access level
-        if self.get_current_user()['access'] < 3:
-            flash('Unauthorized access', 'error')
-            return redirect(url_for('teams.view'))
-        
-        email = request.form.get('email')
-        team_id = request.form.get('team_id')
-        
-        if not email or not team_id:
-            flash('Email and team ID are required', 'error')
-            return redirect(url_for('teams.view'))
-        
-        result = self.team_model.add_user(email=email, team_id=int(team_id))
-        if result['status'] == 'success':
-            # Also update user's team field
-            user_update = self.user_model.update({'email': email, 'team': result['data']['name']})
-            if user_update['status'] == 'success':
-                flash('User added to team successfully', 'success')
-            else:
-                flash('User added but failed to update user record', 'warning')
-        else:
-            flash(result['data'], 'error')
-        
-        return redirect(url_for('teams.view'))
-    
-    def remove_user_from_team(self):
-        """Remove a user from a team."""
-        # Check user has required access level
-        if self.get_current_user()['access'] < 3:
-            flash('Unauthorized access', 'error')
-            return redirect(url_for('teams.view'))
-        
-        email = request.form.get('email')
-        team_id = request.form.get('team_id')
-        
-        if not email or not team_id:
-            flash('Email and team ID are required', 'error')
-            return redirect(url_for('teams.view'))
-        
-        result = self.team_model.remove_user(email=email, team_id=int(team_id))
-        if result['status'] == 'success':
-            # Also update user's team field
-            user_update = self.user_model.update({'email': email, 'team': 'none'})
-            if user_update['status'] == 'success':
-                flash('User removed from team successfully', 'success')
-            else:
-                flash('User removed but failed to update user record', 'warning')
-        else:
-            flash(result['data'], 'error')
-        
-        return redirect(url_for('teams.view'))
     
     def get_current_user(self):
         """Get the current user from the session."""

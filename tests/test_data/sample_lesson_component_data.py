@@ -1,4 +1,4 @@
-"""Sample replacewithsmthhhelse data for testing"""
+"""Sample lesson component data for testing"""
 
 SAMPLE_lesson_componentS = [
     {

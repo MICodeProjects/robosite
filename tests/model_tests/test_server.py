@@ -53,8 +53,6 @@ def test_access_control_admin_routes(client):
     routes = [
         ('/teams/create', 'POST'),
         ('/teams/update', 'POST'),
-        ('/teams/add_user', 'POST'),
-        ('/teams/remove_user', 'POST'),
         ('/users/update', 'POST'),
         ('/users/delete', 'POST'),
         ('/units/create', 'POST'),

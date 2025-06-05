@@ -1,29 +1,8 @@
 """Sample team data for testing"""
 
 SAMPLE_TEAMS = [
-    {
-        "name": "phoenixes",
-        "id": 1,
-        "members": ["captain@robotics.com", "member1@robotics.com"]
-    },
-    {
-        "name": "pigeons",
-        "id": 2,
-        "members": ["student@robotics.com"]
-    },
-    {
-        "name": "teacher",
-        "id": 3,
-        "members": ["teacher@robotics.com"]
-    },
-    {
-        "name": "eagles",
-        "id": 4,
-        "members": []
-    },
-    {
-        "name": "hawks",
-        "id": 5,
-        "members": []
-    }
+    {"id": 1, "name": "phoenixes"},
+    {"id": 1, "name": "phoenixes", "members": []},
+    {"id": 2, "name": "pigeons", "members": []},
+    {"id": 3, "name": "eagles", "members": []}
 ]

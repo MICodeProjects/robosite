@@ -15,29 +15,27 @@ class Team_Model:
         self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
+        """Initialize SQLite database and ensure tables exist.
+        Args:
+            DB_name: Name of the database file or SQLite URL
         """
-        Initialize SQLite database connection using SQLAlchemy
-        """
-        if os.path.isabs(DB_name):
-            db_path = DB_name
-        else:
-            # Convert JSON path to SQLite path
-            db_dir = os.path.dirname(DB_name)
-            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
-            db_path = os.path.join(db_dir, db_name)
+        try:
+            # Initialize database connection
+            if DB_name.startswith('sqlite:///'):
+                self.engine = create_engine(DB_name, echo=True)  # Add echo=True for debugging
+            else:
+                db_dir = os.path.dirname(DB_name)
+                db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+                db_path = os.path.join(db_dir, db_name)
+                os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                self.engine = create_engine(f'sqlite:///{db_path}', echo=True)
+
+            Base.metadata.create_all(self.engine)
+            self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)  # Add expire_on_commit=False
             
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-            
-        # Create database engine
-        db_url = f'sqlite:///{db_path}'
-        self.engine = create_engine(db_url)
-        
-        # Create tables
-        Base.metadata.create_all(self.engine)
-        
-        # Create session factory
-        self.Session = sessionmaker(bind=self.engine)
+        except Exception as e:
+            print(f"Error initializing database: {str(e)}")
+            raise
 
     def exists(self, team: Optional[str] = None, id: Optional[int] = None) -> bool:
         """
@@ -84,95 +82,6 @@ class Team_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
-    def add_user(self, email: str, team_name: str = None, team_id: int = None) -> Dict:
-        """
-        Add a user to a team
-        """
-        try:
-            if team_name is None and team_id is None:
-                return {"status": "error", "data": "Either team_name or team_id must be provided"}
-
-            session = self.Session()
-            try:
-                # Get the team
-                query = session.query(Team)
-                if team_name:
-                    team = query.filter_by(name=team_name).first()
-                else:
-                    team = query.filter_by(id=team_id).first()
-
-                if not team:
-                    return {"status": "error", "data": "Team not found"}
-
-                # Get the user
-                user = session.query(User).filter_by(email=email).first()
-                if not user:
-                    return {"status": "error", "data": f"User {email} does not exist"}
-
-                if user.team_id == team.id:
-                    return {"status": "error", "data": f"User {email} is already a member of this team"}
-
-                # Update user's team
-                user.team_id = team.id
-                session.commit()
-
-                return {"status": "success", "data": {
-                    'name': team.name,
-                    'id': team.id,
-                    'members': [user.email for user in team.users]
-                }}
-            except Exception as e:
-                session.rollback()
-                return {"status": "error", "data": str(e)}
-            finally:
-                session.close()
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
-
-    def remove_user(self, email: str, team_name: str = None, team_id: int = None) -> Dict:
-        """
-        Remove a user from a team
-        """
-        try:
-            if team_name is None and team_id is None:
-                return {"status": "error", "data": "Either team_name or team_id must be provided"}
-
-            session = self.Session()
-            try:
-                # Get the team
-                query = session.query(Team)
-                if team_name:
-                    team = query.filter_by(name=team_name).first()
-                else:
-                    team = query.filter_by(id=team_id).first()
-
-                if not team:
-                    return {"status": "error", "data": "Team not found"}
-
-                # Get the user
-                user = session.query(User).filter_by(email=email).first()
-                if not user:
-                    return {"status": "error", "data": f"User {email} does not exist"}
-
-                if user.team_id != team.id:
-                    return {"status": "error", "data": f"User {email} is not a member of this team"}
-
-                # Remove user from team by setting team_id to None
-                user.team_id = None
-                session.commit()
-
-                return {"status": "success", "data": {
-                    'name': team.name,
-                    'id': team.id,
-                    'members': [user.email for user in team.users]
-                }}
-            except Exception as e:
-                session.rollback()
-                return {"status": "error", "data": str(e)}
-            finally:
-                session.close()
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
 
     def get_team(self, team: str = None, id: int = None) -> Dict:
         """

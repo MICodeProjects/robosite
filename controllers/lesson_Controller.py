@@ -28,7 +28,7 @@ class Lesson_Controller:
         
         lesson = lesson_result['data']
         
-        # Get all replacewithsmthhhelses for this lesson
+        # Get all lesson components for this lesson
         lesson_components_result = self.lesson_component_model.get_by_lesson(lesson_id)
         lesson_components = lesson_components_result['data'] if lesson_components_result['status'] == 'success' else []
         

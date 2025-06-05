@@ -14,11 +14,13 @@ from test_data.sample_team_data import SAMPLE_TEAMS
 # Use SQLite in-memory database for testing
 TEST_DB = "sqlite:///:memory:"
 
+
 @pytest.fixture(scope="function")
 def engine():
     """Create a fresh database engine for each test"""
-    engine = create_engine(TEST_DB)
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine(TEST_DB, echo=True)  # Add echo=True for debugging
+    Base.metadata.drop_all(engine)  # Clear all tables
+    Base.metadata.create_all(engine)  # Create fresh tables
     return engine
 
 @pytest.fixture(scope="function")
@@ -26,35 +28,35 @@ def session(engine):
     """Create a new session for each test"""
     Session = sessionmaker(bind=engine)
     session = Session()
-    yield session
-    session.close()
+    return session  # Remove yield as we want setup_user_data to manage cleanup
 
 @pytest.fixture(scope="function")
-def user(engine):
+def user(engine, session):  # Add session dependency
     """Create a fresh User_Model instance for each test"""
     test_user = user_model.User_Model()
     test_user.initialize_DB(TEST_DB)
+    test_user.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_user
 
-@pytest.fixture(scope="function")
-def setup_user_data(session):
+@pytest.fixture(scope="function", autouse=True)
+def setup_user_data(engine, session, user):  # Add engine and user dependencies
     """Setup test data before each test"""
     try:
-        # Clean up any existing data
+        # Clear existing data
         session.query(User).delete()
         session.query(Team).delete()
         session.commit()
         
-        # First create teams (required for foreign key relationships)
+        # Create teams first
         for team_data in SAMPLE_TEAMS:
             team = Team(
-                id=team_data["id"],  # Explicitly set ID to match test data
-                name=team_data["name"]
+                id=team_data["id"],
+                name=team_data["name"].lower()  # Ensure lowercase names
             )
             session.add(team)
         session.commit()
-
-        # Then create users
+        
+        # Create users
         for user_data in SAMPLE_USERS:
             new_user = User(
                 email=user_data["email"],
@@ -63,13 +65,19 @@ def setup_user_data(session):
             )
             session.add(new_user)
         session.commit()
-
-        yield  # This ensures data is available during tests
         
-        # Cleanup after each test 
+        # Verify data was created
+        teams = session.query(Team).all()
+        users = session.query(User).all()
+        print(f"Created {len(teams)} teams and {len(users)} users")  # Debug output
+        
+        yield
+        
+        # Cleanup after test
         session.query(User).delete()
         session.query(Team).delete()
         session.commit()
+        
     except Exception as e:
         session.rollback()
         raise e

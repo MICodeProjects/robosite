@@ -49,19 +49,6 @@
                             {% endif %}
                         </div>
                         
-                        {% if session.user and session.user.access == 3 %}
-                        <div class="member-actions">                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editUsermodel{{ member.email|replace('@', '_at_')|replace('.', '_dot_') }}">
-                                <i class="fas fa-user-edit"></i>
-                            </button>
-                            <form class="d-inline" method="POST" action="{{ url_for('remove_user_from_team') }}" onsubmit="return confirm('Are you sure you want to remove this user from the team?');">
-                                <input type="hidden" name="email" value="{{ member.email }}">
-                                <input type="hidden" name="team_id" value="{{ team.id }}">
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="fas fa-user-minus"></i>
-                                </button>
-                            </form>
-                        </div>
-                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -197,34 +184,6 @@
         </div>
     </div>
 </div>
-
-<!-- Add Member to Team modal -->
-<div class="modal fade" id="addMembermodel{{ team.id }}" tabindex="-1" aria-labelledby="addMembermodelLabel{{ team.id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">                <h5 class="modal-title" id="addMembermodelLabel{{ team.id }}">Add Member to {{ team.name|capitalize }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>            <form method="POST" action="{{ url_for('add_user_to_team') }}">
-                <div class="modal-body">
-                    <input type="hidden" name="team_id" value="{{ team.id }}">
-                    <div class="form-group mb-3">
-                        <label for="user_email{{ team.id }}">User Email</label>
-                        <select class="form-control" id="user_email{{ team.id }}" name="email" required>
-                            <option value="">Select a user...</option>
-                            {% for user in available_users %}
-                            <option value="{{ user.email }}">{{ user.email }}</option>
-                            {% endfor %}                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add to Team</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endfor %}
 
 <!-- Edit User modals -->
 {% for user in all_users %}

@@ -19,7 +19,7 @@ def test_lesson_view(auth_client, init_controllers):
     assert bytes(lesson['title'].encode()) in response.data
     assert bytes(lesson['description'].encode()) in response.data
     
-    # Check if replacewithsmthhhelses are displayed
+    # Check if lesson component are displayed
     lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
     for lesson_component in lesson_components:
         assert bytes(lesson_component['title'].encode()) in response.data
@@ -114,7 +114,7 @@ def test_invalid_lesson_operations(auth_client, init_controllers):
     assert 'units' in response.location
 
 def test_lesson_component_list(auth_client, init_controllers):
-    """Test replacewithsmthhhelse listing."""
+    """Test lesson component listing."""
     response = auth_client.get('/lessons/1')
     assert response.status_code == 200
     
@@ -134,7 +134,7 @@ def test_lesson_navigation(auth_client, init_controllers):
     assert b'lesson-sidebar' in response.data
     assert b'lesson-content' in response.data
     
-    # Check if replacewithsmthhhelses are in order
+    # Check if lesson components are in order
     lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
     sorted_lesson_components = sorted(lesson_components, key=lambda x: x['order'])
     content = response.data.decode('utf-8')

@@ -49,34 +49,6 @@ def test_update_team(auth_client, init_controllers):
     response = auth_client.get('/teams')
     assert b'super_phoenixes' in response.data
 
-def test_add_user_to_team(auth_client, init_controllers):
-    """Test adding a user to a team."""
-    # Add a user to a team
-    response = auth_client.post('/teams/add_user', data={
-        'email': 'guest@robotics.com',
-        'team_id': '1'
-    })
-    assert response.status_code == 302
-    assert 'teams' in response.location
-    
-    # Verify user was added
-    response = auth_client.get('/teams')
-    assert b'guest@robotics.com' in response.data
-
-def test_remove_user_from_team(auth_client, init_controllers):
-    """Test removing a user from a team."""
-    # Remove a user from a team
-    response = auth_client.post('/teams/remove_user', data={
-        'email': 'member1@robotics.com',
-        'team_id': '1'
-    })
-    assert response.status_code == 302
-    assert 'teams' in response.location
-    
-    # Verify user was removed
-    response = auth_client.get('/teams')
-    assert b'member1@robotics.com' not in response.data
-
 def test_team_stats(auth_client, init_controllers):
     """Test team statistics calculation."""
     response = auth_client.get('/teams')
@@ -94,8 +66,7 @@ def test_unauthorized_team_operations(client, init_controllers):
     operations = [
         ('/teams/create', {'team_name': 'test'}),
         ('/teams/update', {'team_id': '1', 'team_name': 'test'}),
-        ('/teams/add_user', {'email': 'test@test.com', 'team_id': '1'}),
-        ('/teams/remove_user', {'email': 'test@test.com', 'team_id': '1'})
+    
     ]
     
     # Test with no authentication

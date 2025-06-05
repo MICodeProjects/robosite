@@ -16,8 +16,9 @@ TEST_DB = "sqlite:///:memory:"
 @pytest.fixture(scope="function")
 def engine():
     """Create a fresh database engine for each test"""
-    engine = create_engine(TEST_DB)
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine(TEST_DB, echo=True)  # Add echo=True for debugging
+    Base.metadata.drop_all(engine)  # Clear all tables
+    Base.metadata.create_all(engine)  # Create fresh tables
     return engine
 
 @pytest.fixture(scope="function")
@@ -25,39 +26,65 @@ def session(engine):
     """Create a new session for each test"""
     Session = sessionmaker(bind=engine)
     session = Session()
-    yield session
-    session.close()
+    return session  # Remove yield as we want setup_lesson_component_data to manage cleanup
 
 @pytest.fixture(scope="function")
-def lesson_component(engine):
+def lesson_component(engine, session):  # Add session dependency
     """Create a fresh lesson_component_Model instance for each test"""
     test_component = lesson_component_model.lesson_component_Model()
     test_component.initialize_DB(TEST_DB)
+    test_component.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_component
 
-@pytest.fixture
-def setup_lesson_component_data(session):
+@pytest.fixture(scope="function", autouse=True)
+def setup_lesson_component_data(engine, session, lesson_component):  # Add engine and lesson_component dependencies
     """Setup test data before each test"""
     try:
         # Clean up any existing data
         session.query(LessonComponent).delete()
+        session.query(Lesson).delete()
+        session.commit()
+        
+        # Create lessons first (since components depend on lessons)
+        lessons = {}
+        for component_data in SAMPLE_lesson_componentS:
+            if "lesson_id" in component_data:
+                lesson = Lesson(
+                    id=component_data["lesson_id"],
+                    name=f"Lesson {component_data['lesson_id']}"  # Create placeholder lesson names
+                )
+                lessons[component_data["lesson_id"]] = lesson
+                session.add(lesson)
         session.commit()
         
         # Create sample lesson components
         for component_data in SAMPLE_lesson_componentS:
             component = LessonComponent(
-                name=component_data["name"],
-                lesson_id=component_data["lesson_id"],
-                type=component_data["type"],
-                content=component_data["content"]
+                name=component_data.get("name", ""),
+                lesson_id=component_data.get("lesson_id"),
+                type=component_data.get("type", 1),  # Default type to 1 if not specified
+                content=component_data.get("content", "{}")  # Default content to empty JSON
             )
             session.add(component)
         session.commit()
+        
+        # Verify data was created
+        lessons = session.query(Lesson).all()
+        components = session.query(LessonComponent).all()
+        print(f"Created {len(lessons)} lessons and {len(components)} components")  # Debug output
+        
         yield
-    finally:
-        # Clean up after each test
+        
+        # Cleanup after test
         session.query(LessonComponent).delete()
+        session.query(Lesson).delete()
         session.commit()
+        
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
 def test_lesson_component_creation(lesson_component, setup_lesson_component_data):
     """Test creating a new lesson component"""

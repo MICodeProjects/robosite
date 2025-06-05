@@ -47,6 +47,7 @@ robosite/
 │   ├── model_tests/    # Unit tests for models
 │   ├── controller_tests/  # Unit tests for controllers
 │   ├── test_data/     # Test fixtures and sample data
+│   ├── __init__.py          
 │   └── conftest.py    # pytest configuration and fixtures
 │
 ├── data/               # SQLite database and JSON files
@@ -152,8 +153,7 @@ flowchart TD
   - GET `/teams`: View teams
   - POST `/teams/create`: Create new team (Admin only)
   - POST `/teams/update`: Update team (Admin only)
-  - POST `/teams/add_user`: Add user to team (Admin only)
-  - POST `/teams/remove_user`: Remove user from team (Admin only)
+
 - Access Control:
   - Viewing teams requires member access (level 2)
   - Team management requires admin access (level 3)
@@ -217,8 +217,6 @@ classDiagram
         +List[User] users
         --
         +Dict create(String team_name)
-        +Dict add_user(String email, String team_name, Integer team_id)
-        +Dict remove_user(String email, String team_name, Integer team_id)
         +Dict get_team(String team, Integer id)
         +Dict get_all_teams()
         +Dict exists(String team, Integer id)
@@ -316,8 +314,6 @@ classDiagram
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
 - `exists(team: Optional[str], id: Optional[int]) -> bool`: Check team existence
 - `create(team_name: str) -> Dict[status, data]`: Create new team
-- `add_user(email: str, team_name: Optional[str], team_id: Optional[int]) -> Dict[status, data]`: Add user to team
-- `remove_user(email: str, team_name: Optional[str], team_id: Optional[int]) -> Dict[status, data]`: Remove user from team
 - `get_team(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get team by name or ID
 - `get_all_teams() -> Dict[status, List[team]]`: List all teams
 

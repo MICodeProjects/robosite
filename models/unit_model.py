@@ -15,27 +15,27 @@ class Unit_Model:
         self.Session = None
 
     def initialize_DB(self, DB_name: str) -> None:
-        """Initialize SQLite database connection using SQLAlchemy"""
-        if os.path.isabs(DB_name):
-            db_path = DB_name
-        else:
-            # Convert JSON path to SQLite path
-            db_dir = os.path.dirname(DB_name)
-            db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
-            db_path = os.path.join(db_dir, db_name)
+        """Initialize SQLite database and ensure tables exist.
+        Args:
+            DB_name: Name of the database file or SQLite URL
+        """
+        try:
+            # Initialize database connection
+            if DB_name.startswith('sqlite:///'):
+                self.engine = create_engine(DB_name, echo=True)  # Add echo=True for debugging
+            else:
+                db_dir = os.path.dirname(DB_name)
+                db_name = os.path.splitext(os.path.basename(DB_name))[0] + '.db'
+                db_path = os.path.join(db_dir, db_name)
+                os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                self.engine = create_engine(f'sqlite:///{db_path}', echo=True)
+
+            Base.metadata.create_all(self.engine)
+            self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)  # Add expire_on_commit=False
             
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-            
-        # Create database engine
-        db_url = f'sqlite:///{db_path}'
-        self.engine = create_engine(db_url)
-        
-        # Create tables
-        Base.metadata.create_all(self.engine)
-        
-        # Create session factory
-        self.Session = sessionmaker(bind=self.engine)
+        except Exception as e:
+            print(f"Error initializing database: {str(e)}")
+            raise
 
     def exists(self, unit: Optional[str] = None, id: Optional[int] = None) -> bool:
         """Check if a unit exists by name or id"""
