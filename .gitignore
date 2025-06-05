@@ -36,3 +36,7 @@ instance/
 
 # macOS
 .DS_Store
+
+# other
+test_output.txt
+2.0.23
