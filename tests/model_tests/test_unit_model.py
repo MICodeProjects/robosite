@@ -10,13 +10,14 @@ from models import unit_model
 from test_data.sample_unit_data import SAMPLE_UNITS
 
 # Use SQLite in-memory database for testing
-TEST_DB = f"sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'test_database.db')}"
+TEST_DB = "sqlite:///:memory:"
 
 @pytest.fixture(scope="function")
 def engine():
     """Create a fresh database engine for each test"""
-    engine = create_engine(TEST_DB)
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine(TEST_DB, echo=True)  # Add echo=True for debugging
+    Base.metadata.drop_all(engine)  # Clear all tables
+    Base.metadata.create_all(engine)  # Create fresh tables
     return engine
 
 @pytest.fixture(scope="function")
@@ -24,18 +25,18 @@ def session(engine):
     """Create a new session for each test"""
     Session = sessionmaker(bind=engine)
     session = Session()
-    yield session
-    session.close()
+    return session  # Remove yield as we want setup_unit_data to manage cleanup
 
 @pytest.fixture(scope="function")
-def unit(engine):
+def unit(engine, session):  # Add session dependency
     """Create a fresh Unit_Model instance for each test"""
     test_unit = unit_model.Unit_Model()
     test_unit.initialize_DB(TEST_DB)
+    test_unit.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_unit
 
-@pytest.fixture
-def setup_unit_data(session):
+@pytest.fixture(scope="function", autouse=True)
+def setup_unit_data(engine, session, unit):  # Add engine and unit dependencies
     """Setup test data before each test"""
     try:
         # Clean up any existing data
@@ -45,15 +46,27 @@ def setup_unit_data(session):
         # Create sample units
         for unit_data in SAMPLE_UNITS:
             unit = Unit(
-                name=unit_data["name"]
+                id=unit_data["id"],
+                name=unit_data["name"].lower()  # Ensure lowercase names
             )
             session.add(unit)
         session.commit()
+        
+        # Verify data was created
+        units = session.query(Unit).all()
+        print(f"Created {len(units)} units")  # Debug output
+        
         yield
-    finally:
-        # Clean up after each test
+        
+        # Cleanup after test
         session.query(Unit).delete()
         session.commit()
+        
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
 def test_unit_creation(unit, setup_unit_data):
     """Test creating a new unit"""

@@ -11,7 +11,7 @@ from models import lesson_component_model
 from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
 
 # Use SQLite in-memory database for testing
-TEST_DB = f"sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'test_database.db')}"
+TEST_DB = "sqlite:///:memory:"
 
 @pytest.fixture(scope="function")
 def engine():

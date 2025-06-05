@@ -12,7 +12,7 @@ from test_data.sample_user_data import SAMPLE_USERS
 from test_data.sample_team_data import SAMPLE_TEAMS
 
 # Use SQLite in-memory database for testing
-TEST_DB = f"sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'test_database.db')}"
+TEST_DB = "sqlite:///:memory:"
 
 @pytest.fixture(scope="function")
 def engine():
@@ -36,7 +36,7 @@ def user(engine):
     test_user.initialize_DB(TEST_DB)
     return test_user
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def setup_user_data(session):
     """Setup test data before each test"""
     try:
@@ -46,11 +46,12 @@ def setup_user_data(session):
         session.commit()
         
         # First create teams (required for foreign key relationships)
-        created_teams = {}  # Keep track of created teams
         for team_data in SAMPLE_TEAMS:
-            team = Team(name=team_data["name"])
+            team = Team(
+                id=team_data["id"],  # Explicitly set ID to match test data
+                name=team_data["name"]
+            )
             session.add(team)
-            created_teams[team_data["id"]] = team
         session.commit()
 
         # Then create users
@@ -62,47 +63,42 @@ def setup_user_data(session):
             )
             session.add(new_user)
         session.commit()
-    
+
+        yield  # This ensures data is available during tests
+        
+        # Cleanup after each test 
+        session.query(User).delete()
+        session.query(Team).delete()
+        session.commit()
     except Exception as e:
         session.rollback()
         raise e
-
-    yield
-       
-    # Cleanup after tests
-    session.query(User).delete()
-    session.query(Team).delete()
-    session.commit()
-
-@pytest.fixture(autouse=True)
-def cleanup():
-    """Cleanup fixture that runs automatically after all tests"""
-    yield
-    test_db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', TEST_DB)
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
+    finally:
+        session.close()
 
 def test_user_creation(user, setup_user_data, session):
     """Test creating a new user"""
-    result = user.create({
-        "email": "newuser@robotics.com",
-        "team_id": 1,  # phoenixes team
-        "access": 2
-    })
-    assert result["status"] == "success", f"Creation failed. Got response: {result}"
-    assert result["data"]["email"] == "newuser@robotics.com", f"Wrong email in response. Got: {result['data']}"
-    
-    # Verify in database
-    db_user = session.query(User).filter_by(email="newuser@robotics.com").first()
-    assert db_user is not None, "User was not created in database"
-    assert db_user.email == "newuser@robotics.com", f"Wrong email in DB. Got: {db_user.email}"
-    assert db_user.team_id == 1, f"Wrong team_id in DB. Got: {db_user.team_id}"
-    assert db_user.access == 2, f"Wrong access level in DB. Got: {db_user.access}"
+    # First ensure the test team exists
+    if setup_user_data:  # Use the fixture data
+        result = user.create({
+            "email": "newuser@robotics.com",
+            "team_id": 1,  # phoenixes team
+            "access": 2
+        })
+        assert result["status"] == "success", f"Creation failed. Got response: {result}"
+        assert result["data"]["email"] == "newuser@robotics.com", f"Wrong email in response. Got: {result['data']}"
+        
+        # Verify in database
+        db_user = session.query(User).filter_by(email="newuser@robotics.com").first()
+        assert db_user is not None, "User was not created in database"
+        assert db_user.email == "newuser@robotics.com", f"Wrong email in DB. Got: {db_user.email}"
+        assert db_user.team_id == 1, f"Wrong team_id in DB. Got: {db_user.team_id}"
+        assert db_user.access == 2, f"Wrong access level in DB. Got: {db_user.access}"
 
 def test_user_get_by_email(user, setup_user_data, session):
     """Test retrieving a user by email"""
     result = user.get("captain@robotics.com")
-    assert result["status"] == "success", f"Get failed. Got response: {result}"
+    assert result["status"] == "success", f"Get failed. Got response: {result["data"]}"
     assert result["data"]["email"] == "captain@robotics.com", f"Wrong email in response. Got: {result['data']}"
     assert result["data"]["team_id"] == 1, f"Wrong team_id in response. Got: {result['data']}"  # phoenixes team
     assert result["data"]["access"] == 3, f"Wrong access level in response. Got: {result['data']}"

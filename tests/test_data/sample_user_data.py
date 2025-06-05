@@ -13,17 +13,17 @@ SAMPLE_USERS = [
     },
     {
         "email": "teacher@robotics.com",
-        "team_id": 2,  # teacher team
+        "team_id": 3,  # teacher team
         "access": 3
     },
     {
         "email": "student@robotics.com",
-        "team_id": 3,  # pigeons team
+        "team_id": 2,  # pigeons team
         "access": 2
     },
     {
         "email": "guest@robotics.com",
-        "team_id": None,  # no team
+        "team_id": 1,  # phoenixes team
         "access": 1
     }
 ]

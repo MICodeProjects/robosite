@@ -60,8 +60,11 @@ class User_Model:
             
         try:
             session = self.Session()
-            exists = session.query(User).filter_by(email=email).first() is not None
-            return {"status": "success", "data": exists}
+            try:
+                exists = session.query(User).filter_by(email=email).first() is not None
+                return {"status": "success", "data": exists}
+            finally:
+                session.close()
         except Exception as e:
             return {"status": "error", "data": str(e)}
         finally:
@@ -90,28 +93,20 @@ class User_Model:
             exists_result = self.exists(user_info['email'])
             if exists_result["status"] == "error":
                 return exists_result
-            if exists_result["data"]:
+            if exists_result["status"]=="success":
                 return {"status": "error", "data": f"User with email {user_info['email']} already exists"}
             
             # Validate access level
-            access = user_info.get('access', 1)
+            access = user_info.access
             if access not in [1, 2, 3]:
                 return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
             
             session = self.Session()
             try:
-                # Validate team_id exists if provided
-                team_id = user_info.get('team_id')
-                if team_id is not None:
-                    team = session.query(Team).filter_by(id=team_id).first()
-                    if team is None:
-                        return {"status": "error", "data": f"Team with ID {team_id} does not exist"}
-                
-                # Create new user
                 new_user = User(
                     email=user_info['email'],
-                    team_id=team_id,
-                    access=access
+                    team_id=user_info['team_id'],
+                    access=user_info['access']
                 )
                 session.add(new_user)
                 session.commit()
@@ -154,7 +149,7 @@ class User_Model:
             return {"status": "error", "data": str(e)}
         finally:
             session.close()
-
+            
     def get_all(self) -> Dict:
         """Get all users from the database.
         
@@ -198,6 +193,12 @@ class User_Model:
             if 'email' not in user_info:
                 return {"status": "error", "data": "Email is required"}
             
+
+            
+            # Validate access level if provided
+            if 'access' in user_info and user_info['access'] not in [1, 2, 3]:
+                return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
+            
             session = self.Session()
             try:
                 user = session.query(User).filter_by(email=user_info['email']).first()
@@ -205,10 +206,10 @@ class User_Model:
                     return {"status": "error", "data": f"User with email {user_info['email']} not found"}
                 
                 # Update fields if provided
-                if 'access' in user_info:
-                    user.access = user_info['access']
                 if 'team_id' in user_info:
                     user.team_id = user_info['team_id']
+                if 'access' in user_info:
+                    user.access = user_info['access']
                 
                 session.commit()
                 
@@ -226,7 +227,7 @@ class User_Model:
             return {"status": "error", "data": str(e)}
     
     def remove(self, email: str) -> Dict:
-        """Remove a user by email.
+        """Remove a user from the database by email.
         
         Args:
             email: The email of the user to remove
