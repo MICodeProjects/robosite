@@ -304,7 +304,7 @@ classDiagram
 - `exists(email: str) -> bool`: Check if user exists
 - `create(user_info: Dict) -> Dict[status, data]`: Create new user with validation
   - Required fields: email
-  - Optional fields: team (default="none"), access (default=1)
+  - Optional fields: team (default=2), access (default=1)
 - `get(email: str) -> Dict[status, data]`: Retrieve user by email
 - `get_all() -> Dict[status, List[user]]`: List all users
 - `update(user_info: Dict) -> Dict[status, data]`: Update user information

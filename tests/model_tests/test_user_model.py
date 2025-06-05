@@ -83,7 +83,7 @@ def setup_user_data(engine, session, user):  # Add engine and user dependencies
         raise e
     finally:
         session.close()
-
+        
 def test_user_creation(user, setup_user_data, session):
     """Test creating a new user"""
     # First ensure the test team exists

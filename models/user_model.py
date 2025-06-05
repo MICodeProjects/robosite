@@ -109,10 +109,12 @@ class User_Model:
                     team = session.query(Team).filter_by(id=user_info['team_id']).first()
                     if not team:
                         return {"status": "error", "data": f"Team with id {user_info['team_id']} does not exist"}
-                
+                    team_id=user_info.get('team_id') # NO TEAM TEST TEST TEST
+                else:
+                    team_id=None # NO TEAM TEST
                 new_user = User(
                     email=user_info['email'],
-                    team_id=user_info.get('team_id'),
+                    team_id=team_id,# NO TEAM TEST
                     access=access
                 )
                 session.add(new_user)
@@ -146,6 +148,12 @@ class User_Model:
         try:
             user = session.query(User).filter_by(email=email).first()
             if user:
+                if user.team_id==None: # NO TEAM TESTING 
+                    return {"status": "success", "data": {
+                    "email": user.email,
+                    "team_id": "No team", 
+                    "access": user.access
+                    }}
                 return {"status": "success", "data": {
                     "email": user.email,
                     "team_id": user.team_id,
@@ -168,11 +176,11 @@ class User_Model:
         session = self.Session()
         try:
             # Use joinedload to eagerly load team relationship and avoid N+1 queries
-            users = session.query(User).options(joinedload(User.team)).all()
-            return {"status": "success", "data": [
+           users = session.query(User).options(joinedload(User.team)).all()
+           return {"status": "success", "data": [
                 {
                     "email": user.email,
-                    "team_id": user.team_id,
+                    "team_id": user.team_id if user.team_id is not None else "No team",
                     "access": user.access
                 } for user in users
             ]}
@@ -214,7 +222,10 @@ class User_Model:
                 
                 # Update fields if provided
                 if 'team_id' in user_info:
-                    user.team_id = user_info['team_id']
+                    if 'team_id' == "No team": # NO TEAM TEST
+                        user.team_id = None
+                    else:
+                        user.team_id = user_info['team_id']
                 if 'access' in user_info:
                     user.access = user_info['access']
                 
@@ -222,7 +233,7 @@ class User_Model:
                 
                 return {"status": "success", "data": {
                     "email": user.email,
-                    "team_id": user.team_id,
+                    "team_id": user.team_id if user.team_id is not None else "No team", # NO TEAM TEST
                     "access": user.access
                 }}
             except Exception as e:

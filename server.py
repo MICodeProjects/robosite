@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
+from datetime import datetime
 
 # Import models
 from models.user_model import User_Model
@@ -52,6 +53,12 @@ def init_databases():
     lesson_component_model.initialize_DB(DB_name=db_url)
     
     print(f"Database initialized successfully at {db_path}")
+
+# Context processor to inject current year into templates
+@app.context_processor
+def inject_year():
+    """Inject the current year into all templates."""
+    return {'year': datetime.now().year}
 
 # Route Handlers
 @app.route('/')

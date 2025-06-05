@@ -3,93 +3,93 @@
 {% block title %}{{ lesson.name }} - Robosite{% endblock %}
 
 {% block content %}
-<div class="flex h-screen">
-        <div class="w-64 bg-gray-100 shadow-md overflow-y-auto">
-        <div class="p-4 bg-blue-600 text-white">
-            <h3 class="font-bold text-lg truncate">{{ lesson.name }}</h3>
-            <p class="text-sm text-blue-100">{{ unit.name }}</p>
-        </div>
-        
-        <nav class="p-2">
-            {% if lesson_components %}
-                {% for lesson_component in lesson_components %}
-                <a href="/lesson/{{ lesson.id }}/lesson_component/{{ lesson_component.id }}" 
-                   class="block p-3 mb-1 rounded transition-colors {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}bg-blue-500 text-white{% else %}hover:bg-gray-200{% endif %}">
-                    <div class="font-medium">{{ lesson_component.name }}</div>
-                    <div class="text-xs {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}text-blue-100{% else %}text-gray-500{% endif %}">
-                        {% if lesson_component.type == 1 %}
-                            Text
-                        {% elif lesson_component.type == 2 %}
-                            Video
-                        {% elif lesson_component.type == 3 %}
-                            Quiz
-                        {% elif lesson_component.type == 4 %}
-                            Exercise
-                        {% else %}
-                            Material
-                        {% endif %}
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <div class="p-4 text-gray-500 italic">No content available for this lesson.</div>
-            {% endif %}
-        </nav>
-        
-        {% if user and user.access >= 3 %}
-        <div class="p-3 border-t border-gray-200">
-            <button id="add-lesson_component-btn" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm">
-                Add lesson_component
-            </button>
-        </div>
-        {% endif %}
-    </div>
-    
-        <div class="flex-1 overflow-y-auto">
-        <div class="container mx-auto p-6">
-            {% if current_lesson_component %}
-                <div class="flex justify-between items-start mb-6">
-                    <h1 class="text-2xl font-bold">{{ current_lesson_component.name }}</h1>
-                    
-                    {% if user and user.access >= 3 %}
-                    <div class="flex space-x-2">
-                        <button id="edit-lesson_component-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
-                            Edit
-                        </button>
-                        <button id="delete-lesson_component-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-                            Delete
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div id="lesson_component-content" class="prose max-w-none">
-                                                {% if current_lesson_component.type == 1 %}
-                                                        {{ current_lesson_component.content|safe }}
-                        {% elif current_lesson_component.type == 2 %}
-                                                        <div class="aspect-w-16 aspect-h-9">
-                                <iframe src="{{ current_lesson_component.content }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                            </div>
-                        {% elif current_lesson_component.type == 3 %}
-                                                        <div class="quiz-container" data-quiz="{{ current_lesson_component.content }}">
-                                                                <div class="quiz-loading">Loading quiz...</div>
-                            </div>
-                        {% elif current_lesson_component.type == 4 %}
-                                                        <div class="exercise-container">
-                                {{ current_lesson_component.content|safe }}
-                                
-                                {% if user and user.access >= 2 %}
-                                <div class="mt-6 p-4 bg-gray-50 rounded-md">
-                                    <h3 class="font-medium mb-2">Submit your solution</h3>
-                                    <textarea class="w-full p-2 border rounded" rows="6" placeholder="Enter your solution here..."></textarea>
-                                    <button class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                                        Submit
-                                    </button>
-                                </div>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                                                        <div class="p-4 bg-gray-100 rounded">
-                                {{ current_lesson_component.content|safe }}
-   
+<div class="row h-100">
+    <div class="col-md-3 bg-light border-end">
+        <div class="p-3 bg-primary text-white">
+            <h3 class="h5 mb-1 text-truncate">{{ lesson.name }}</h3>
+            <p class="small mb-0 text-white-50">{{ unit.name }}</p>
+        </div>
+        
+        <nav class="p-2">
+            {% if lesson_components %}
+                {% for lesson_component in lesson_components %}
+                <a href="/lesson/{{ lesson.id }}/lesson_component/{{ lesson_component.id }}" 
+                   class="d-block p-2 mb-2 text-decoration-none rounded
+                   {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}
+                   bg-primary text-white
+                   {% else %}
+                   text-dark hover-bg-light
+                   {% endif %}">
+                    <div class="fw-medium">{{ lesson_component.name }}</div>
+                    <div class="small {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}text-white-50{% else %}text-muted{% endif %}">
+                        {% if lesson_component.type == 1 %}
+                            <i class="bi bi-file-text me-1"></i>Text
+                        {% elif lesson_component.type == 2 %}
+                            <i class="bi bi-play-circle me-1"></i>Video
+                        {% elif lesson_component.type == 3 %}
+                            <i class="bi bi-question-circle me-1"></i>Quiz
+                        {% elif lesson_component.type == 4 %}
+                            <i class="bi bi-pencil-square me-1"></i>Exercise
+                        {% else %}
+                            <i class="bi bi-folder me-1"></i>Material
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="p-3 text-muted fst-italic">No content available for this lesson.</div>
+            {% endif %}
+        </nav>
+        
+        {% if user and user.access >= 3 %}
+        <div class="p-3 border-top">
+            <button id="add-lesson_component-btn" class="btn btn-success w-100">
+                <i class="bi bi-plus-circle me-1"></i>Add Component
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-9">
+        <div class="p-4">
+            {% if current_lesson_component %}
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h2 class="mb-1">{{ current_lesson_component.name }}</h2>
+                        <p class="text-muted mb-0">{{ current_lesson_component.description }}</p>
+                    </div>
+                    {% if user and user.access >= 3 %}
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary">Edit</button>
+                        <button class="btn btn-outline-danger">Delete</button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="lesson-content">
+                    {{ current_lesson_component.content | safe }}
+                </div>
+            {% else %}
+                <div class="text-center text-muted p-5">
+                    <i class="bi bi-journal-text display-1 mb-3"></i>
+                    <h3>Select a component to view its content</h3>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add component button handler
+    const addButton = document.getElementById('add-lesson_component-btn');
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            // TODO: Implement component addition modal/form
+        });
+    }
+});
+</script>
+{% endblock %}

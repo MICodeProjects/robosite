@@ -82,7 +82,7 @@ class Team_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
-
+    
     def get_team(self, team: str = None, id: int = None) -> Dict:
         """
         Get a team by name or id
