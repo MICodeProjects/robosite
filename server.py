@@ -42,17 +42,13 @@ def init_databases():
     # Ensure data directory exists
     os.makedirs('data', exist_ok=True)
     
-    db_path = os.path.abspath(os.path.join('data', 'robosite.db'))
-    db_url = f'sqlite:///{db_path}'
+    user_model.initialize_DB(DB_name='data/users.json')
+    team_model.initialize_DB(DB_name='data/teams.json')
+    unit_model.initialize_DB(DB_name='data/units.json')
+    lesson_model.initialize_DB(DB_name='data/lessons.json')
+    lesson_component_model.initialize_DB(DB_name='data/lesson_components.json')
     
-    # Initialize all models with the same database
-    user_model.initialize_DB(DB_name=db_url)
-    team_model.initialize_DB(DB_name=db_url)
-    unit_model.initialize_DB(DB_name=db_url)
-    lesson_model.initialize_DB(DB_name=db_url)
-    lesson_component_model.initialize_DB(DB_name=db_url)
-    
-    print(f"Database initialized successfully at {db_path}")
+    print("All databases initialized successfully!")
 
 # Context processor to inject current year into templates
 @app.context_processor
