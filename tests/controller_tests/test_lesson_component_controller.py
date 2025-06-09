@@ -5,15 +5,14 @@ import os
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 from flask import url_for
-from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
+from tests.test_data.sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
 
 def test_lesson_component_view(auth_client, init_controllers):
     """Test viewing a lesson component."""
     response = auth_client.get('/lesson_components/1')
     assert response.status_code == 200
-    
-    # Check if lesson_component content is displayed
-    lesson_component = next(c for c in SAMPLE_lesson_componentS if c['id'] == 1)
+      # Check if lesson_component content is displayed
+    lesson_component = next(c for c in SAMPLE_LESSON_COMPONENTS if c['id'] == 1)
     assert bytes(lesson_component['title'].encode()) in response.data
     assert bytes(lesson_component['content'].encode()) in response.data
 
@@ -63,7 +62,7 @@ def test_delete_lesson_component(auth_client, init_controllers):
     
     # Verify lesson_component was deleted
     response = auth_client.get('/lessons/1')
-    lesson_component = next(c for c in SAMPLE_lesson_componentS if c['id'] == 1)
+    lesson_component = next(c for c in SAMPLE_LESSON_COMPONENTS if c['id'] == 1)
     assert bytes(lesson_component['title'].encode()) not in response.data
 
 def test_unauthorized_lesson_component_operations(client, init_controllers):

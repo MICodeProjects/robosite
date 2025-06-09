@@ -6,7 +6,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.insert(0, root_dir)
 from flask import url_for
 from tests.test_data.sample_lesson_data import SAMPLE_LESSONS
-from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
+from tests.test_data.sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
 
 def test_lesson_view(auth_client, init_controllers):
     """Test viewing a lesson."""
@@ -18,9 +18,8 @@ def test_lesson_view(auth_client, init_controllers):
     lesson = next(l for l in SAMPLE_LESSONS if l['id'] == 1)
     assert bytes(lesson['title'].encode()) in response.data
     assert bytes(lesson['description'].encode()) in response.data
-    
-    # Check if lesson component are displayed
-    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+      # Check if lesson component are displayed
+    lesson_components = [c for c in SAMPLE_LESSON_COMPONENTS if c['lesson_id'] == 1]
     for lesson_component in lesson_components:
         assert bytes(lesson_component['title'].encode()) in response.data
 
@@ -117,9 +116,8 @@ def test_lesson_component_list(auth_client, init_controllers):
     """Test lesson component listing."""
     response = auth_client.get('/lessons/1')
     assert response.status_code == 200
-    
-    # Check if all lesson_components for lesson 1 are listed
-    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+      # Check if all lesson_components for lesson 1 are listed
+    lesson_components = [c for c in SAMPLE_LESSON_COMPONENTS if c['lesson_id'] == 1]
     for lesson_component in lesson_components:
         assert bytes(lesson_component['title'].encode()) in response.data
         # Check if lesson_component type is indicated
@@ -133,9 +131,8 @@ def test_lesson_navigation(auth_client, init_controllers):
     # Check if navigation elements exist
     assert b'lesson-sidebar' in response.data
     assert b'lesson-content' in response.data
-    
-    # Check if lesson components are in order
-    lesson_components = [c for c in SAMPLE_lesson_componentS if c['lesson_id'] == 1]
+      # Check if lesson components are in order
+    lesson_components = [c for c in SAMPLE_LESSON_COMPONENTS if c['lesson_id'] == 1]
     sorted_lesson_components = sorted(lesson_components, key=lambda x: x['order'])
     content = response.data.decode('utf-8')
     last_pos = 0

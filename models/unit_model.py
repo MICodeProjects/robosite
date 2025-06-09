@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, Unit, Lesson
 
-class Unit_Model:
+class UnitModel:
     """
     Unit Model - Handles all interactions with the unit database using SQLAlchemy
     """

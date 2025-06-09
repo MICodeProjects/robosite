@@ -15,17 +15,10 @@
             organized environment.
         </p>
         
-        {% if not user.email %}
+        {% if not user or not user.email %}
         <div class="d-grid gap-2 d-md-flex">
             <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-md-2">Register Now</a>
             <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">Login</a>
-        </div>
-        {% else %}
-        <div class="d-grid gap-2 d-md-flex">
-            {% if user.access >= 2 %}
-            <a href="{{ url_for('to_do') }}" class="btn btn-primary btn-lg me-md-2">My Tasks</a>
-            {% endif %}
-            <a href="{{ url_for('units') }}" class="btn btn-outline-secondary btn-lg">Browse Units</a>
         </div>
         {% endif %}
     </div>
@@ -36,6 +29,48 @@
         </div>
     </div>
 </div>
+
+{% if user and user.access >= 3 %}
+<hr class="my-5">
+
+<div class="row">
+    <div class="col-12">
+        <h2 class="h4 mb-4"><i class="bi bi-graph-up text-primary me-2"></i>System Statistics</h2>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Total Users</h6>
+                <h2 class="card-title mb-0">{{ statistics.total_users if statistics else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Active Teams</h6>
+                <h2 class="card-title mb-0">{{ statistics.total_teams if statistics else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Total Units</h6>
+                <h2 class="card-title mb-0">{{ statistics.total_units if statistics else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Total Lessons</h6>
+                <h2 class="card-title mb-0">{{ statistics.total_lessons if statistics else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <hr class="my-5">
 

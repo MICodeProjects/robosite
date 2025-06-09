@@ -18,6 +18,7 @@ robosite/
 │   ├── Team_Controller.py
 │   ├── unit_Controller.py
 │   ├── lesson_Controller.py
+|   ├── session_Controller.py
 │   └── lesson_component_Controller.py
 │
 ├── models/               # Database models and business logic
@@ -61,7 +62,7 @@ robosite/
 
 - **models/**: Contains SQLAlchemy models representing database tables and their relationships. Each model implements data access methods and business logic for its respective entity.
 
-- **templates/**: Jinja2 templates for rendering HTML pages. Uses a base template pattern with shared components for consistent layout and navigation.
+- **templates/**: Jinja2 templates for rendering HTML pages. Uses a base template pattern with shared template sections for consistent layout and navigation.
 
 - **static/**: Houses static assets like CSS files, JavaScript, and images.
 
@@ -81,27 +82,33 @@ classDiagram
     
     class Routes {
         "/" : index
+        "/login" : login
+        "/register" : register
+        "/profile" : profile
+        "/settings" : settings
+        "/logout" : logout
         "/teams/*" : team routes
         "/users/*" : user routes
         "/units/*" : unit routes
         "/lessons/*" : lesson routes
-        "/components/*" : component routes
+        "/lesson_components/*" : lesson component routes
     }
 
     class Controllers {
-        User_Controller
-        Team_Controller
-        Unit_Controller
-        Lesson_Controller
-        LessonComponent_Controller
-    }
-
+    UserController
+    TeamController
+    UnitController
+    LessonController
+    LessonComponentController
+    SessionController
+    }    
+    
     class Models {
-        User_Model
-        Team_Model
-        Unit_Model
-        Lesson_Model
-        LessonComponent_Model
+        UserModel
+        TeamModel
+        UnitModel
+        LessonModel
+        LessonComponentModel
     }
 ```
 
@@ -138,6 +145,20 @@ flowchart TD
 ```
 
 ### Controllers and Routes
+
+#### Session Controller
+- Routes:
+  - GET `/`: index
+  - GET `/login`: login
+  - POST `/login`: login
+  - GET `/register`: register
+  - POST `/register`: register
+  - GET `/profile`: profile
+  - GET `/settings`: settings
+  - GET `/logout`: logout
+
+- Access Control:
+  - All routes are publicly accessible.
 
 #### User Controller
 - Routes:
@@ -178,22 +199,23 @@ flowchart TD
   - Viewing lessons requires member access (level 2)
   - Lesson management requires admin access (level 3)
 
-#### LessonComponent Controller
+#### Lesson Component Controller
 - Routes:
-  - GET `/lesson_components/<id>`: View component
-  - POST `/lesson_components/create`: Create component (Admin only)
-  - POST `/lesson_components/update`: Update component (Admin only)
-  - POST `/lesson_components/delete`: Delete component (Admin only)
+  - GET `/lesson_components/<id>`: View lesson component
+  - POST `/lesson_components/create`: Create lesson component (Admin only)
+  - POST `/lesson_components/update`: Update lesson component (Admin only)
+  - POST `/lesson_components/delete`: Delete lesson component (Admin only)
 - Access Control:
-  - Viewing components requires member access (level 2)
-  - Component management requires admin access (level 3)
+  - Viewing lesson components requires member access (level 2)
+  - Lesson Component management requires admin access (level 3)
 
 ## Data Models
 
 ### Database Schema
 ```mermaid
-classDiagram
-    direction LR
+classDiagram    
+
+direction LR
     User "many" -- "1" Team : belongs to
     Lesson "many" -- "1" Unit : belongs to
     LessonComponent "many" -- "1" Lesson : belongs to
@@ -241,7 +263,7 @@ classDiagram
         +Integer type
         +String img
         +Integer unit_id FK
-        +List[LessonComponent] components
+        +List[LessonComponent] lesson components
         --
         +Dict create(Dict lesson_info)
         +Dict get(String lesson, Integer id)
@@ -259,11 +281,11 @@ classDiagram
         +String content
         +Integer lesson_id FK
         --
-        +Dict create(Dict component_info)
+        +Dict create(Dict lesson_component_info)
         +Dict get(String name, Integer id)
         +Dict get_all()
         +Dict get_by_lesson_id(Integer lesson_id)
-        +Dict update(Dict component_info)
+        +Dict update(Dict lesson_component_info)
         +Dict remove(String name, Integer id)
         +Dict exists(String name, Integer id)
     }
@@ -299,7 +321,7 @@ classDiagram
 
 ### Model Methods
 
-#### User_Model
+#### UserModel
 - `initialize_DB(DB_name: str) -> None`: Initialize SQLite database connection
 - `exists(email: str) -> bool`: Check if user exists
 - `create(user_info: Dict) -> Dict[status, data]`: Create new user with validation
@@ -310,14 +332,14 @@ classDiagram
 - `update(user_info: Dict) -> Dict[status, data]`: Update user information
 - `remove(email: str) -> Dict[status, data]`: Delete user
 
-#### Team_Model
+#### TeamModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
 - `exists(team: Optional[str], id: Optional[int]) -> bool`: Check team existence
 - `create(team_name: str) -> Dict[status, data]`: Create new team
 - `get_team(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get team by name or ID
 - `get_all_teams() -> Dict[status, List[team]]`: List all teams
 
-#### Unit_Model
+#### UnitModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
 - `exists(unit: Optional[str], id: Optional[int]) -> bool`: Check unit existence
 - `create(unit_name: str) -> Dict[status, data]`: Create new unit
@@ -326,7 +348,7 @@ classDiagram
 - `update(unit_info: Dict) -> Dict[status, data]`: Update unit information
 - `remove(unit: Optional[str], id: Optional[int]) -> Dict[status, data]`: Delete unit
 
-#### Lesson_Model
+#### LessonModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
 - `exists(lesson: Optional[str], id: Optional[int]) -> bool`: Check lesson existence
 - `create(lesson_info: Dict) -> Dict[status, data]`: Create new lesson
@@ -338,17 +360,17 @@ classDiagram
 - `update(lesson_info: Dict) -> Dict[status, data]`: Update lesson information
 - `remove(lesson: Optional[str], id: Optional[int]) -> Dict[status, data]`: Delete lesson
 
-#### Lesson_Component_Model
+#### LessonComponentModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(lesson_component: Optional[str], id: Optional[int]) -> bool`: Check component existence
-- `create(component_info: Dict) -> Dict[status, data]`: Create new component
+- `exists(lesson_component: Optional[str], id: Optional[int]) -> bool`: Check lesson component existence
+- `create(lesson_component_info: Dict) -> Dict[status, data]`: Create new lesson component
   - Required fields: name, lesson_id
   - Optional fields: type (default=1), content (default='{}')
-- `get(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get component by name or ID
-- `get_all() -> Dict[status, List[component]]`: List all components
-- `get_by_lesson_id(lesson_id: int) -> Dict[status, List[component]]`: Get components for a lesson
-- `update(component_info: Dict) -> Dict[status, data]`: Update component information
-- `remove(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Delete component
+- `get(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get lesson component by name or ID
+- `get_all() -> Dict[status, List[lesson_component]]`: List all lesson components
+- `get_by_lesson_id(lesson_id: int) -> Dict[status, List[lesson_component]]`: Get lesson components for a lesson
+- `update(lesson_component_info: Dict) -> Dict[status, data]`: Update lesson_component information
+- `remove(lesson_component: Optional[str], id: Optional[int]) -> Dict[status, data]`: Delete lesson component
 
 
 
@@ -362,7 +384,7 @@ graph TB
     base --> teams[team.html]
     base --> units[units.html]
     base --> lessons[lesson.html]
-    base --> auth[login.html & register.html]
+    base --> auth[login.html & register.html & profile.html & settings.html & logout.html]
 ```
 
 ### Template Components
@@ -391,6 +413,13 @@ graph TB
    - Registration form
    - Email/team/access level inputs
    - Login link
+3. profile.html
+   - User profile information
+4. settings.html
+   - User settings form
+5. logout.html
+   - Logout confirmation page
+   - Link to return to the home page
 
 #### Content Templates
 1. index.html
@@ -403,7 +432,7 @@ graph TB
    - Team list/grid view
    - Team member management (admin)
    - Team statistics
-   - Member assignments
+   - Member assignments (lessons that members need to complete)
 
 3. units.html
    - Unit list/grid view
@@ -456,6 +485,9 @@ python -m pytest tests/model_tests/
 
 # Run all controller tests
 python -m pytest tests/controller_tests/
+
+# Run specific session controller test
+python -m pytest tests/controller_tests/test_session_controller.py
 
 # Run specific model test
 python -m pytest tests/model_tests/test_user_model.py

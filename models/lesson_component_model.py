@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, LessonComponent
 
-class lesson_component_Model:
+class LessonComponentModel:
     """
     LessonComponent Model - Handles all interactions with the lesson component database using SQLAlchemy
     

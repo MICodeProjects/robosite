@@ -33,7 +33,7 @@ def session(engine):
 @pytest.fixture(scope="function")
 def user(engine, session):  # Add session dependency
     """Create a fresh User_Model instance for each test"""
-    test_user = user_model.User_Model()
+    test_user = user_model.UserModel()
     test_user.initialize_DB(TEST_DB)
     test_user.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_user
@@ -83,7 +83,7 @@ def setup_user_data(engine, session, user):  # Add engine and user dependencies
         raise e
     finally:
         session.close()
-        
+
 def test_user_creation(user, setup_user_data, session):
     """Test creating a new user"""
     # First ensure the test team exists

@@ -30,7 +30,7 @@ def session(engine):
 @pytest.fixture(scope="function")
 def unit(engine, session):  # Add session dependency
     """Create a fresh Unit_Model instance for each test"""
-    test_unit = unit_model.Unit_Model()
+    test_unit = unit_model.UnitModel()
     test_unit.initialize_DB(TEST_DB)
     test_unit.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_unit

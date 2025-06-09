@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, Team, User
 
-class Team_Model:
+class TeamModel:
     """
     Team Model - Handles all interactions with the team database using SQLAlchemy
     """
@@ -82,7 +82,7 @@ class Team_Model:
         except Exception as e:
             return {"status": "error", "data": str(e)}
 
-    
+
     def get_team(self, team: str = None, id: int = None) -> Dict:
         """
         Get a team by name or id

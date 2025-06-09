@@ -4,16 +4,29 @@
 
 {% block content %}
 <div class="row h-100">
+    <!-- Sidebar -->
+             <h5 class="modal-title">Add Lesson Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('lesson_components_create') }}" method="POST">
+                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="lessonComponentName" class="form-label">Lesson Component Name</label>
+                        <input type="text" class="form-control" id="lessonComponentName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lessonComponentType" class="form-label">Type</label>
+                        <select class="form-select" id="lessonComponentType" name="type" required>
     <div class="col-md-3 bg-light border-end">
         <div class="p-3 bg-primary text-white">
             <h3 class="h5 mb-1 text-truncate">{{ lesson.name }}</h3>
             <p class="small mb-0 text-white-50">{{ unit.name }}</p>
         </div>
-        
+          <!-- Lesson Component Navigation -->
         <nav class="p-2">
-            {% if lesson_components %}
-                {% for lesson_component in lesson_components %}
-                <a href="/lesson/{{ lesson.id }}/lesson_component/{{ lesson_component.id }}" 
+            {% if lesson_components %}            {% for lesson_component in lesson_components %}
+                <a href="{{ url_for('lesson_component', lesson_id=lesson.id, lesson_component_id=lesson_component.id) }}" 
                    class="d-block p-2 mb-2 text-decoration-none rounded
                    {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}
                    bg-primary text-white
@@ -43,53 +56,228 @@
         
         {% if user and user.access >= 3 %}
         <div class="p-3 border-top">
-            <button id="add-lesson_component-btn" class="btn btn-success w-100">
-                <i class="bi bi-plus-circle me-1"></i>Add Component
+            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addLessonComponentModal">
+                <i class="bi bi-plus-circle me-1"></i>Add Lesson Component
             </button>
         </div>
         {% endif %}
     </div>
     
+    <!-- Main Content -->
     <div class="col-md-9">
         <div class="p-4">
             {% if current_lesson_component %}
                 <div class="d-flex justify-content-between align-items-start mb-4">
                     <div>
                         <h2 class="mb-1">{{ current_lesson_component.name }}</h2>
-                        <p class="text-muted mb-0">{{ current_lesson_component.description }}</p>
+                        {% if current_lesson_component.type == 1 %}
+                            <span class="badge bg-primary">Text</span>
+                        {% elif current_lesson_component.type == 2 %}
+                            <span class="badge bg-success">Video</span>
+                        {% elif current_lesson_component.type == 3 %}
+                            <span class="badge bg-warning text-dark">Quiz</span>
+                        {% elif current_lesson_component.type == 4 %}
+                            <span class="badge bg-info">Exercise</span>
+                        {% endif %}
                     </div>
                     {% if user and user.access >= 3 %}
                     <div class="btn-group">
-                        <button class="btn btn-outline-primary">Edit</button>
-                        <button class="btn btn-outline-danger">Delete</button>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editLessonComponentModal{{ current_lesson_component.id }}">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </button>                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteLessonComponentModal{{ current_lesson_component.id }}">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </button>
                     </div>
                     {% endif %}
                 </div>
                 
                 <div class="lesson-content">
-                    {{ current_lesson_component.content | safe }}
+                    {% if current_lesson_component.type == 1 %}
+                        <!-- Text content -->
+                        <div class="prose max-w-none">
+                            {{ current_lesson_component.content | safe }}
+                        </div>
+                    {% elif current_clesson_omponent.type == 2 %}
+                        <!-- Video content -->
+                        <div class="ratio ratio-16x9">
+                            <iframe src="{{ current_lesson_component.content.url }}" allowfullscreen></iframe>
+                        </div>
+                    {% elif current_lesson_component.type == 3 %}
+                        <!-- Quiz content -->
+                        <div class="quiz-container">
+                            {% for question in current_lesson_component.content.questions %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ question.q }}</h5>
+                                    {% for option in question.options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="q{{ loop.parent.loop.index }}" value="{{ loop.index0 }}">
+                                        <label class="form-check-label">{{ option }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <button type="submit" class="btn btn-primary">Submit Answers</button>
+                        </div>
+                    {% elif current_lesson_component.type == 4 %}
+                        <!-- Exercise content -->
+                        <div class="exercise-container">
+                            {{ current_lesson_component.content | safe }}
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-success me-2">Submit Solution</button>
+                                <button type="button" class="btn btn-outline-secondary">View Solution</button>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="text-center text-muted p-5">
                     <i class="bi bi-journal-text display-1 mb-3"></i>
-                    <h3>Select a component to view its content</h3>
+                    <h3>Select a lesson component to view its content</h3>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+{% if user and user.access >= 3 %}
+<!-- Add Component Modal -->
+<div class="modal fade" id="addLessonComponentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Lesson Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('lesson_components_create') }}" method="POST">
+                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">                        <label for="lessonComponentName" class="form-label">Lesson Component Name</label>
+                        <input type="text" class="form-control" id="lessonComponentName" name="name" required>
+                    </div>
+                    <div class="mb-3">                        <label for="lessonComponentType" class="form-label">Type</label>
+                        <select class="form-select" id="lessonComponentType" name="type" required>
+                            <option value="1">Text</option>
+                            <option value="2">Video</option>
+                            <option value="3">Quiz</option>
+                            <option value="4">Exercise</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lessonComponentContent" class="form-label">Content</label>
+                        <textarea class="form-control" id="lessonComponentContent" name="content" rows="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Lesson Component</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>            {% if current_lesson_component %}
+<!-- Edit Lesson Component Modal -->
+<div class="modal fade" id="editLessonComponentModal{{ current_lesson_component.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Lesson Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('lesson_components_update', id=current_component.id) }}" method="POST">
+                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">                        
+                        <label for="editLessonComponentName" class="form-label">Lesson Component Name</label>
+                        <input type="text" class="form-control" id="editLessonComponentName" 
+                               name="name" value="{{ current_lesson_component.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLessonComponentType" class="form-label">Type</label>
+                        <select class="form-select" id="editLessonComponentType" name="type" required>
+                            <option value="1" {% if current_component.type == 1 %}selected{% endif %}>Text</option>
+                            <option value="2" {% if current_component.type == 2 %}selected{% endif %}>Video</option>
+                            <option value="3" {% if current_component.type == 3 %}selected{% endif %}>Quiz</option>
+                            <option value="4" {% if current_component.type == 4 %}selected{% endif %}>Exercise</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLessonComponentContent" class="form-label">Content</label>
+                        <textarea class="form-control" id="editLessonComponentContent" 
+                                  name="content" rows="5">{{ current_component.content }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Lesson Component Modal -->
+<div class="modal fade" id="deleteLessonComponentModal{{ current_lesson_component.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">                
+                <h5 class="modal-title">Delete Lesson Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<strong>{{ current_component.name }}</strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('lesson_components_delete', id=current_component.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete Lesson Component</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add component button handler
-    const addButton = document.getElementById('add-lesson_component-btn');
-    if (addButton) {
-        addButton.addEventListener('click', function() {
-            // TODO: Implement component addition modal/form
-        });
+    // Function to set up type-dependent content placeholders
+    function setupTypeContentInteraction(typeId, contentId) {
+        const typeSelect = document.getElementById(typeId);
+        const contentArea = document.getElementById(contentId);
+        
+        if (typeSelect && contentArea) {
+            typeSelect.addEventListener('change', function() {
+                switch(this.value) {
+                    case '1': // Text
+                        contentArea.placeholder = 'Enter HTML content here...';
+                        break;
+                    case '2': // Video
+                        contentArea.placeholder = '{"url": "https://example.com/video"}';
+                        break;
+                    case '3': // Quiz
+                        contentArea.placeholder = '{\n  "questions": [\n    {\n      "q": "Question text",\n      "options": ["Option 1", "Option 2", "Option 3"],\n      "correct": 0\n    }\n  ]\n}';
+                        break;
+                    case '4': // Exercise
+                        contentArea.placeholder = '{\n  "instructions": "Exercise instructions",\n  "starter_code": "# Your starter code here",\n  "solution": "# Solution code here"\n}';
+                        break;
+                }
+            });
+            
+            // Trigger change event to set initial placeholder
+            typeSelect.dispatchEvent(new Event('change'));
+        }
     }
+    
+    // Setup for Add Lesson Component form
+    setupTypeContentInteraction('lessonComponentType', 'lessonComponentContent');
+    
+    // Setup for Edit Lesson Component form
+    setupTypeContentInteraction('editLessonComponentType', 'editLessonComponentContent');
 });
 </script>
 {% endblock %}

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, Lesson, LessonComponent
 
-class Lesson_Model:
+class LessonModel:
     """
     Lesson Model - Handles all interactions with the lesson database using SQLAlchemy
     
@@ -14,7 +14,7 @@ class Lesson_Model:
         - type: int
         - img: string
         - unit_id: int
-        - components: List[LessonComponent]
+        - components: List[Lesson_Component]
     """
     
     def __init__(self):

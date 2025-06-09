@@ -31,7 +31,7 @@ def session(engine):
 @pytest.fixture(scope="function")
 def team(engine, session):  # Add session dependency
     """Create a fresh Team_Model instance for each test"""
-    test_team = team_model.Team_Model()
+    test_team = team_model.TeamModel()
     test_team.initialize_DB(TEST_DB)
     test_team.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_team
@@ -45,36 +45,32 @@ def setup_team_data(engine, session, team):  # Add engine and user dependencies
         session.query(Team).delete()
         session.commit()
         
-        # Create sample teams
-        created_teams = {}
+        # Create sample teams without explicit IDs
+        team_map = {}  # Map team names to their auto-generated IDs
         for team_data in SAMPLE_TEAMS:
-            team = Team(
-                id=team_data["id"],
-                name=team_data["name"].lower()  # Ensure lowercase names
-            )
-            session.add(team)
-            created_teams[team_data["id"]] = team
+            new_team = Team(name=team_data["name"].lower())
+            session.add(new_team)
+            session.flush()  # This will populate the id
+            team_map[team_data["name"].lower()] = new_team.id
         session.commit()
         
-        # Create users
+        # Create users with correct team IDs
         for user_data in SAMPLE_USERS:
             if user_data.get("team_id"):
-                user = User(
-                    email=user_data["email"],
-                    team_id=user_data["team_id"],
-                    access=user_data["access"]
-                )
-                session.add(user)
+                # Map old team_id to new team_id using team name
+                team_name = next((t["name"].lower() for t in SAMPLE_TEAMS if t["id"] == user_data["team_id"]), None)
+                if team_name:
+                    user = User(
+                        email=user_data["email"],
+                        team_id=team_map[team_name],
+                        access=user_data["access"]
+                    )
+                    session.add(user)
         session.commit()
         
-        # Verify data was created
-        teams = session.query(Team).all()
-        users = session.query(User).all()
-        print(f"Created {len(teams)} teams and {len(users)} users")  # Debug output
+        yield team_map  # Pass team mapping to tests
         
-        yield
-        
-        # Cleanup after test (setup_team_data manages cleanup)
+        # Cleanup after test
         session.query(User).delete()
         session.query(Team).delete()
         session.commit()

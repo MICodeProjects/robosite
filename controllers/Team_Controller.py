@@ -1,9 +1,9 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from models.team_model import Team_Model
-from models.user_model import User_Model
+from models.team_model import TeamModel
+from models.user_model import UserModel
 
-class Team_Controller:
-    def __init__(self, team_model: Team_Model, user_model: User_Model):
+class TeamController:
+    def __init__(self, team_model: TeamModel, user_model: UserModel):
         self.team_model = team_model
         self.user_model = user_model
 

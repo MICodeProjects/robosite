@@ -5,38 +5,91 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
                 <h4 class="mb-0">Register for Robosite</h4>
+                <p class="mb-0 small">Join our robotics learning community</p>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('register') }}">
+                <form method="POST" action="{{ url_for('register') }}" class="needs-validation" novalidate>
+                    <!-- Email field -->
                     <div class="mb-3">
                         <label for="email" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                        <div class="form-text text-muted">We'll never share your email with anyone else.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" required
+                                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+                        </div>
                         <div class="form-text text-muted">
-                            Note: For demo purposes, password verification is not implemented.
+                            We'll never share your email with anyone else.
+                        </div>
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
                         </div>
                     </div>
                     
+                    <!-- Password field -->
                     <div class="mb-3">
-                        <label for="team" class="form-label">Team</label>
-                        <select class="form-select" id="team" name="team" required>
-                            <option value="">Select a team...</option>
-                            <option value="phoenixes">Phoenixes</option>
-                            <option value="pigeons">Pigeons (default)</option>
-                            <option value="teacher">Teacher</option>
-                        </select>
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   required minlength="8">
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-muted">
+                            Note: For demo purposes, password verification is not implemented.
+                        </div>
+                        <div class="invalid-feedback">
+                            Password must be at least 8 characters long.
+                        </div>
                     </div>
                     
+                    <!-- Team selection -->
+                    <div class="mb-3">
+                        <label for="team" class="form-label">Team</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-people"></i></span>
+                            <select class="form-select" id="team" name="team" required>
+                                <option value="">Select a team...</option>
+                                {% if teams %}
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}" {% if team.name == 'pigeons' %}selected{% endif %}>
+                                        {{ team.name|title }}
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="phoenixes">Phoenixes</option>
+                                    <option value="pigeons" selected>Pigeons (default)</option>
+                                    <option value="teacher">Teacher</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="invalid-feedback">
+                            Please select a team.
+                        </div>
+                    </div>
+                    
+                    <!-- Terms acceptance -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+                            </label>
+                            <div class="invalid-feedback">
+                                You must agree to the terms and conditions.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit button -->
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Register</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-2"></i>Register
+                        </button>
                     </div>
                 </form>
             </div>
@@ -46,4 +99,65 @@
         </div>
     </div>
 </div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Educational Purpose</h6>
+                <p>This platform is designed for educational purposes within our robotics program.</p>
+                
+                <h6>2. User Responsibilities</h6>
+                <p>Users are expected to:</p>
+                <ul>
+                    <li>Maintain appropriate conduct</li>
+                    <li>Respect intellectual property rights</li>
+                    <li>Keep their credentials secure</li>
+                </ul>
+                
+                <h6>3. Data Usage</h6>
+                <p>We collect minimal data necessary for the platform's operation.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password visibility toggle
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+    
+    if (togglePassword && password) {
+        togglePassword.addEventListener('click', function() {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+    }
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+});
+</script>
 {% endblock %}

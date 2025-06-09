@@ -1,20 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
 from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+from models.database import Base
 
 # Import models
-from models.user_model import User_Model
-from models.team_model import Team_Model
-from models.unit_model import Unit_Model
-from models.lesson_model import Lesson_Model
-from models.lesson_component_model import lesson_component_Model
+from models.user_model import UserModel
+from models.team_model import TeamModel
+from models.unit_model import UnitModel
+from models.lesson_model import LessonModel
+from models.lesson_component_model import LessonComponentModel
 
 # Import controllers
-from controllers.User_Controller import User_Controller
-from controllers.Team_Controller import Team_Controller
-from controllers.unit_Controller import Unit_Controller
-from controllers.lesson_Controller import Lesson_Controller
-from controllers.lesson_component_Controller import lesson_component_Controller
+from controllers.User_Controller import UserController
+from controllers.Team_Controller import TeamController
+from controllers.unit_Controller import UnitController
+from controllers.lesson_Controller import LessonController
+from controllers.lesson_component_Controller import LessonComponentController
+from controllers.session_Controller import SessionController
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # For session management
@@ -22,47 +26,86 @@ app.secret_key = os.urandom(24)  # For session management
 # Set up static folder
 app.static_folder = 'static'
 
-# Initialize model instances
-user_model = User_Model()
-team_model = Team_Model()
-unit_model = Unit_Model()
-lesson_model = Lesson_Model()
-lesson_component_model = lesson_component_Model()
+# Database setup
+DB_PATH = os.path.join('data', 'robosite.db')
+DB_URL = f'sqlite:///{DB_PATH}'
+
+# Initialize models with database URL
+user_model = UserModel()
+team_model = TeamModel()
+unit_model = UnitModel()
+lesson_model = LessonModel()
+lesson_component_model = LessonComponentModel()
 
 # Initialize controller instances
-user_controller = User_Controller(user_model)
-team_controller = Team_Controller(team_model, user_model)
-unit_controller = Unit_Controller(unit_model, lesson_model)
-lesson_controller = Lesson_Controller(lesson_model, lesson_component_model)
-lesson_component_controller = lesson_component_Controller(lesson_component_model)
+user_controller = UserController(user_model)
+team_controller = TeamController(team_model, user_model)
+unit_controller = UnitController(unit_model, lesson_model)
+lesson_controller = LessonController(lesson_model, lesson_component_model)
+lesson_component_controller = LessonComponentController(lesson_component_model)
+session_controller = SessionController(user_model, team_model)
 
-# Initialize database files
-def init_databases():
-    """Initialize all database files"""
-    # Ensure data directory exists
+def init_database():
+    """Initialize the SQLite database"""
     os.makedirs('data', exist_ok=True)
+    db_path = os.path.abspath(os.path.join('data', 'robosite.db'))
+    db_url = f'sqlite:///{db_path}'
+     # Initialize all models with the same databaseAdd commentMore actions
+    user_model.initialize_DB(DB_name=db_url)
+    team_model.initialize_DB(DB_name=db_url)
+    unit_model.initialize_DB(DB_name=db_url)
+    lesson_model.initialize_DB(DB_name=db_url)
+    lesson_component_model.initialize_DB(DB_name=db_url)
     
-    user_model.initialize_DB(DB_name='data/users.json')
-    team_model.initialize_DB(DB_name='data/teams.json')
-    unit_model.initialize_DB(DB_name='data/units.json')
-    lesson_model.initialize_DB(DB_name='data/lessons.json')
-    lesson_component_model.initialize_DB(DB_name='data/lesson_components.json')
+    # Create admin user if not exists
+    if not user_model.exists(email='admin@robotics.com')["data"]:
+        user_model.create({
+            'email': 'admin@robotics.com',
+            'access': 3,
+            'team_id': 1  # Assuming team ID 1 exists, otherwise create a team first
+        })
+        print("Admin user created successfully!")
     
-    print("All databases initialized successfully!")
-
+    print(f"Database initialized successfully at {db_path}")
+    
 # Context processor to inject current year into templates
 @app.context_processor
 def inject_year():
     """Inject the current year into all templates."""
     return {'year': datetime.now().year}
 
+
+
 # Route Handlers
 @app.route('/')
 def index():
     """Home page."""
-    current_user = user_controller.get_current_user()
-    session['user'] = current_user
-    return render_template('index.html')
+    return session_controller.index()
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page."""
+    return session_controller.login()
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Register page."""
+    return session_controller.register()
+
+@app.route('/profile')
+def profile():
+    """Profile page."""
+    return session_controller.profile()
+
+@app.route('/settings')
+def settings():
+    """Settings page."""
+    return session_controller.settings()
+
+@app.route('/logout')
+def logout():
+    """Logout page."""
+    return session_controller.logout()
 
 # Routes using add_url_rule for cleaner organization
 
@@ -126,7 +169,7 @@ def check_access():
 
 if __name__ == '__main__':
     # Initialize databases
-    init_databases()
+    init_database()
     
     # Start the Flask development server
     app.run(debug=True)

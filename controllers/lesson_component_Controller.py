@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from models.lesson_component_model import lesson_component_Model
+from models.lesson_component_model import LessonComponentModel
 
-class lesson_component_Controller:
-    def __init__(self, lesson_component_model: lesson_component_Model):
+class LessonComponentController:    
+    def __init__(self, lesson_component_model: LessonComponentModel):
         self.lesson_component_model = lesson_component_model
     
     def get_current_user(self):

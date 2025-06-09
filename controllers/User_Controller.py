@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from models.user_model import User_Model
+from models.user_model import UserModel
 
-class User_Controller:
-    def __init__(self, user_model: User_Model):
+class UserController:
+    def __init__(self, user_model: UserModel):
         self.user_model = user_model
     
     def get_current_user(self):

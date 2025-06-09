@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.database import Base, Lesson, LessonComponent
 from models import lesson_component_model
-from tests.test_data.sample_lesson_component_data import SAMPLE_lesson_componentS
+from tests.test_data.sample_lesson_component_data import SAMPLE_LESSON_COMPONENTS
 
 # Use SQLite in-memory database for testing
 TEST_DB = "sqlite:///:memory:"
@@ -29,9 +29,8 @@ def session(engine):
     return session  # Remove yield as we want setup_lesson_component_data to manage cleanup
 
 @pytest.fixture(scope="function")
-def lesson_component(engine, session):  # Add session dependency
-    """Create a fresh lesson_component_Model instance for each test"""
-    test_component = lesson_component_model.lesson_component_Model()
+def lesson_component(engine, session):  # Add session dependency    """Create a fresh LessonComponentModel instance for each test"""
+    test_component = lesson_component_model.LessonComponentModel()
     test_component.initialize_DB(TEST_DB)
     test_component.Session = sessionmaker(bind=engine)  # Use the same engine
     return test_component
@@ -44,10 +43,9 @@ def setup_lesson_component_data(engine, session, lesson_component):  # Add engin
         session.query(LessonComponent).delete()
         session.query(Lesson).delete()
         session.commit()
-        
-        # Create lessons first (since components depend on lessons)
+          # Create lessons first (since components depend on lessons)
         lessons = {}
-        for component_data in SAMPLE_lesson_componentS:
+        for component_data in SAMPLE_LESSON_COMPONENTS:
             if "lesson_id" in component_data:
                 lesson = Lesson(
                     id=component_data["lesson_id"],
@@ -58,14 +56,14 @@ def setup_lesson_component_data(engine, session, lesson_component):  # Add engin
         session.commit()
         
         # Create sample lesson components
-        for component_data in SAMPLE_lesson_componentS:
+        for component_data in SAMPLE_LESSON_COMPONENTS:            
             component = LessonComponent(
                 name=component_data.get("name", ""),
                 lesson_id=component_data.get("lesson_id"),
                 type=component_data.get("type", 1),  # Default type to 1 if not specified
                 content=component_data.get("content", "{}")  # Default content to empty JSON
             )
-            session.add(component)
+            session.add(component)  # <-- Move this inside the loop!
         session.commit()
         
         # Verify data was created
@@ -126,7 +124,19 @@ def test_lesson_component_get_all(lesson_component, setup_lesson_component_data)
     result = lesson_component.get_all()
     
     assert result["status"] == "success"
-    assert len(result["data"]) == len(SAMPLE_lesson_componentS)
+    # Compare count
+    assert len(result["data"]) == len(SAMPLE_LESSON_COMPONENTS)
+    # Sort both lists by name for consistent comparison
+    actual_sorted = sorted(result["data"], key=lambda x: x["name"])
+    expected_sorted = sorted(SAMPLE_LESSON_COMPONENTS, key=lambda x: x.get("name", ""))
+    for expected, actual in zip(expected_sorted, actual_sorted):
+        assert actual["name"] == expected.get("name", "")
+        assert actual["lesson_id"] == expected.get("lesson_id")
+        assert actual["type"] == expected.get("type", 1)
+        import json
+        expected_content = expected.get("content", "{}")
+        actual_content = actual.get("content", "{}")
+        assert json.loads(actual_content) == json.loads(expected_content)
 
 def test_get_lesson_components_by_lesson(lesson_component, setup_lesson_component_data):
     """Test getting all lesson_components for a specific lesson"""

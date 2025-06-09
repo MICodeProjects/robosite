@@ -1,9 +1,9 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from models.lesson_model import Lesson_Model
-from models.lesson_component_model import lesson_component_Model
+from models.lesson_model import LessonModel
+from models.lesson_component_model import LessonComponentModel
 
-class Lesson_Controller:
-    def __init__(self, lesson_model: Lesson_Model, lesson_component_model: lesson_component_Model):
+class LessonController:
+    def __init__(self, lesson_model: LessonModel, lesson_component_model: LessonComponentModel):
         self.lesson_model = lesson_model
         self.lesson_component_model = lesson_component_model
     
