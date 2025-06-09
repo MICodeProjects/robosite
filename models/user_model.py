@@ -45,117 +45,6 @@ class UserModel:
             print(f"Error initializing database: {str(e)}")
             raise
         
-    def exists(self, email: str) -> Dict:
-        """Check if a user with the given email exists in the database.
-        
-        Args:
-            email: The email to check
-            
-        Returns:
-            Dict with keys:
-                status: "success" or "error"
-                data: bool indicating if user exists, or error message
-        """
-        if not email:
-            return {"status": "error", "data": "Email is required"}
-            
-        try:
-            session = self.Session()
-            try:
-                exists = session.query(User).filter_by(email=email).first() is not None
-                return {"status": "success", "data": exists}
-            finally:
-                session.close()
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
-        finally:
-            session.close()
-    
-    def create(self, user_info: Dict) -> Dict:
-        """Create a new user in the database.
-        
-        Args:
-            user_info: Dictionary containing:
-                email: User's email address
-                team_id: ID of the team (optional)
-                access: Access level (optional, defaults to 1)
-                
-        Returns:
-            Dict with keys:
-                status: "success" or "error"
-                data: User data dict or error message
-        """
-
-        try:
-            if 'email' not in user_info:
-                return {"status": "error", "data": "Email is required"}
-            
-            # Check if user already exists
-            exists_result = self.exists(user_info['email'])
-            if exists_result["status"] == "error":
-                return exists_result
-            if exists_result["data"]:  # Check the data field, not status
-                return {"status": "error", "data": f"User with email {user_info['email']} already exists"}
-            
-            # Validate access level
-            access = user_info.get('access', 1)  # Default to 1 if not provided
-            if access not in [1, 2, 3]:
-                return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
-            
-            # Validate team_id exists if provided
-            session = self.Session()
-            try:
-                if 'team_id' in user_info:
-                    team = session.query(Team).filter_by(id=user_info['team_id']).first()
-                    if not team:
-                        return {"status": "error", "data": f"Team with id {user_info['team_id']} does not exist"}
-                
-                new_user = User(
-                    email=user_info['email'],
-                    team_id=user_info.get('team_id'),
-                    access=access
-                )
-                session.add(new_user)
-                session.commit()
-                
-                return {"status": "success", "data": {
-                    "email": new_user.email,
-                    "team_id": new_user.team_id,
-                    "access": new_user.access
-                }}
-            except Exception as e:
-                session.rollback()
-                return {"status": "error", "data": str(e)}
-            finally:
-                session.close()
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
-
-    def get(self, email: str) -> Dict:
-        """Get a user by email.
-        
-        Args:
-            email: The email of the user to retrieve
-            
-        Returns:
-            Dict with keys:
-                status: "success" or "error"
-                data: User data dict or error message
-        """
-        session = self.Session()
-        try:
-            user = session.query(User).filter_by(email=email).first()
-            if user:
-                return {"status": "success", "data": {
-                    "email": user.email,
-                    "team_id": user.team_id,
-                    "access": user.access
-                }}
-            return {"status": "error", "data": f"User with email {email} not found"}
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
-        finally:
-            session.close()
             
     def get_all(self) -> Dict:
         """Get all users from the database.
@@ -265,3 +154,141 @@ class UserModel:
             return {"status": "error", "data": str(e)}
         finally:
             session.close()
+    
+    def exists(self, email: str=None, google_id: str=None) -> bool:
+        """Check if a user exists by Google ID.
+        
+        Args:
+            google_id: The Google ID to check
+            
+        Returns:
+            bool: True if user exists, False otherwise
+        """
+        if google_id:
+            session = self.Session()
+            try:
+                return session.query(User).filter_by(google_id=google_id).first() is not None
+            except Exception as e:
+                return False
+            finally:
+                session.close()
+        elif email:
+            if not email:
+                return {"status": "error", "data": "Email or google id is required"}
+            
+            try:
+                session = self.Session()
+                try:
+                    exists = session.query(User).filter_by(email=email).first() is not None
+                    return {"status": "success", "data": exists}
+                finally:
+                    session.close()
+            except Exception as e:
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
+
+
+    def create(self, user_info: Dict) -> Dict:
+        """Create a new user in the database using Google OAuth information.
+        
+        Args:
+            user_info: Dictionary containing:
+                google_id: User's Google ID
+                name: User's full name
+                email: User's email address
+                profile_picture: URL of the user's profile picture (optional)
+                access: Access level (optional, defaults to 1)
+                team_id: ID of the team (optional)
+                
+        Returns:
+            Dict with keys:
+                status: "success" or "error"
+                data: User data dict or error message
+        """
+        try:
+            if 'google_id' not in user_info or 'email' not in user_info:
+                return {"status": "error", "data": "Google ID and email are required"}
+            
+            # Check if user already exists
+            if self.exists_by_google_id(user_info['google_id']):
+                return {"status": "error", "data": "User with this Google ID already exists"}
+            
+            # Default access level to 1 if not provided
+            access = user_info.get('access', 1)
+            
+            # Create new user
+            session = self.Session()
+            try:
+                new_user = User(
+                    google_id=user_info['google_id'],
+                    name=user_info['name'],
+                    email=user_info['email'],
+                    profile_picture=user_info.get('profile_picture'),
+                    access=access,
+                    team_id=user_info.get('team_id')
+                )
+                session.add(new_user)
+                session.commit()
+                
+                return {"status": "success", "data": {
+                    "google_id": new_user.google_id,
+                    "name": new_user.name,
+                    "email": new_user.email,
+                    "profile_picture": new_user.profile_picture,
+                    "access": new_user.access,
+                    "team_id": new_user.team_id
+                }}
+            except Exception as e:
+                session.rollback()
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
+        except Exception as e:
+            return {"status": "error", "data": str(e)}
+    
+    def get(self, email: str=None, google_id: str=None) -> Dict:
+        """Get a user by Google ID.
+        
+        Args:
+            google_id: The Google ID of the user to retrieve
+            
+        Returns:
+            Dict with keys:
+                status: "success" or "error"
+                data: User data dict or error message
+        """
+        if google_id!=None:
+            session = self.Session()
+            try:
+                user = session.query(User).options(joinedload(User.team)).filter_by(google_id=google_id).first()
+                if user:
+                    return {"status": "success", "data": {
+                        "google_id": user.google_id,
+                        "name": user.name,
+                        "email": user.email,
+                        "profile_picture": user.profile_picture,
+                        "access": user.access,
+                        "team_id": user.team_id
+                    }}
+                return {"status": "error", "data": "User not found"}
+            except Exception as e:
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
+        elif email !=None:
+            session = self.Session()
+            try:
+                user = session.query(User).filter_by(email=email).first()
+                if user:
+                    return {"status": "success", "data": {
+                        "email": user.email,
+                        "team_id": user.team_id,
+                        "access": user.access
+                    }}
+                return {"status": "error", "data": f"User with email {email} not found"}
+            except Exception as e:
+                return {"status": "error", "data": str(e)}
+            finally:
+                session.close()
+                

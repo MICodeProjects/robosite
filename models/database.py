@@ -6,7 +6,10 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
-    email = Column(String, primary_key=True)
+    google_id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    profile_picture = Column(String)
     team_id = Column(Integer, ForeignKey('teams.id'))
     access = Column(Integer)
     team = relationship("Team", back_populates="users")

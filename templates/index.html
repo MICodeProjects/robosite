@@ -17,7 +17,6 @@
         
         {% if not user or not user.email %}
         <div class="d-grid gap-2 d-md-flex">
-            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-md-2">Register Now</a>
             <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">Login</a>
         </div>
         {% endif %}

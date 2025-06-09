@@ -227,7 +227,7 @@ def test_invalid_access_level(user, setup_user_data):
 def test_duplicate_email(user, setup_user_data):
     """Test creating a user with an email that already exists"""
     # First check if email exists
-    exists_result = user.exists("captain@robotics.com")
+    exists_result = user.exists(email="captain@robotics.com")
     assert exists_result["status"] == "success"
     assert exists_result["data"] == True
     

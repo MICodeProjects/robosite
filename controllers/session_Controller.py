@@ -1,76 +1,69 @@
 from flask import render_template, request, redirect, url_for, session, flash
+import os
+import requests  # Add this import
+from google.oauth2 import id_token
+from google_auth_oauthlib.flow import Flow
+from config.google_oauth import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OAUTH_SCOPES
 from models.user_model import UserModel
-from models.team_model import TeamModel  # Import TeamModel
-import os  # Import os module
+from models.team_model import TeamModel
+
+
 
 class SessionController:
-    def __init__(self, user_model: UserModel, team_model: TeamModel):
+    def __init__(self, team_model:TeamModel, user_model: UserModel):
         self.user_model = user_model
-        self.team_model = team_model
-        # Ensure Session is initialized
-        if not hasattr(self.user_model, 'Session') or self.user_model.Session is None:
-            db_url = os.environ.get('DB_URL', 'sqlite:///:memory:')
-            self.user_model.initialize_DB(db_url)
-        if not hasattr(self.team_model, 'Session') or self.team_model.Session is None:
-            db_url = os.environ.get('DB_URL', 'sqlite:///:memory:')
-            self.team_model.initialize_DB(db_url)
+        self.team_model=team_model
+        self.flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                }
+            },
+            scopes=OAUTH_SCOPES,
+            redirect_uri="http://localhost:5000/callback"
+        )
 
+    def login(self):
+        authorization_url, state = self.flow.authorization_url()
+        session["state"] = state
+        session.permanent = True  # Make session permanent
+        return redirect(authorization_url)
+
+    def callback(self):
+        self.flow.fetch_token(authorization_response=request.url)
+        credentials = self.flow.credentials
+        user_info = id_token.verify_oauth2_token(
+            credentials.id_token, 
+            requests.Request(), 
+            GOOGLE_CLIENT_ID
+        )
+
+        # Create or update user with default access level 2
+        user = {
+            'google_id': user_info['sub'],
+            'name': user_info['name'],
+            'email': user_info['email'],
+            'profile_picture': user_info.get('picture'),
+            'access': 2  # Default to member access
+        }
+        
+        self.user_model.create_or_update(user)
+        session['user'] = user
+        session.permanent = True  # Make session permanent
+        return redirect(url_for('index'))
+
+    def logout(self):
+        session.clear()
+        return redirect(url_for('index'))
     def index(self):
         """Home page."""
         current_user = self.get_current_user()
         return render_template('index.html', user=current_user)
 
-    def login(self):
-        """Login page."""
-        if request.method == 'POST':
-            email = request.form['email']
-            user_result = self.user_model.get(email)
-            
-            if user_result['status'] == 'success':
-                user = user_result['data']
-                # Update session
-                session['user'] = user
-                session['user_email'] = user['email']
-                flash('Welcome to Robosite', 'success')
-                return redirect(url_for('index'))
-            else:
-                flash('Invalid credentials.', 'error')
-                return render_template('login.html')
-        return render_template('login.html')
-
-    def register(self):
-        """Register page."""
-        if request.method == 'POST':
-            email = request.form['email']
-            password = request.form['password']  # In real app, hash this!
-            team_id = request.form['team']
-            
-            print(f"Attempting registration for email: {email}, team_id: {team_id}")
-            # Create user
-            result = self.user_model.create({
-                'email': email,
-                'team_id': team_id,
-                'access': 2  # Default access level for new members
-            })
-            print(f"User create result: {result}")
-            
-            if result['status'] == 'success':
-                # Update session after successful registration
-                session['user'] = result['data']
-                session['user_email'] = result['data']['email']
-                flash('Welcome to Robosite', 'success')
-                print(f"Registration successful for user: {email}")
-                return redirect(url_for('index'))
-            else:
-                flash(result['data'], 'error')
-                print(f"Registration failed for user: {email}, reason: {result['data']}")
-                return render_template('register.html', teams=self.team_model.get_all_teams()["data"])
-        
-        print("Rendering register page")
-        teams = self.team_model.get_all_teams()
-        print(f"Teams data: {teams}")
-        return render_template('register.html', teams=teams["data"])
-
+    
     def profile(self):
         """Profile page."""
         return render_template('profile.html')
@@ -78,14 +71,6 @@ class SessionController:
     def settings(self):
         """Settings page."""
         return render_template('settings.html')
-
-    def logout(self):
-        """Logout page."""
-        if 'user' in session:
-            session.pop('user', None)
-            session.pop('user_email', None)
-            flash('You have been successfully logged out.', 'info')
-        return redirect(url_for('index'))
 
     def get_current_user(self):
         """Get the current user from the session."""

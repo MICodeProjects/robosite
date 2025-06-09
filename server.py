@@ -21,7 +21,8 @@ from controllers.lesson_component_Controller import LessonComponentController
 from controllers.session_Controller import SessionController
 
 app = Flask(__name__)
-app.secret_key = "your-very-secret-key"  # Use a constant key!
+app.secret_key = "your-very-secret-key"
+app.permanent_session_lifetime = timedelta(days=30)  # Set session to last 30 days
 
 # Set up static folder
 app.static_folder = 'static'
@@ -117,7 +118,9 @@ def login():
     """Login page."""
     return session_controller.login()
 
-
+@app.route('/callback')
+def callback():
+    return session_controller.callback()
 
 @app.route('/profile')
 def profile():
@@ -133,10 +136,6 @@ def settings():
 def logout():
     """Logout page."""
     return session_controller.logout()
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    return session_controller.register()
 
 # If you want 'teams_manage' or 'statistics', define them:
 # @app.route('/teams/manage')
@@ -185,7 +184,7 @@ def check_access():
     current_user = user_controller.get_current_user()
     
     # Public routes - allow all access levels
-    public_routes = ['index', 'login', 'register']
+    public_routes = ['index', 'login', 'callback']
     if request.endpoint in public_routes:
         return None
         
