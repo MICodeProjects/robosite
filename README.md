@@ -426,7 +426,6 @@ graph TB
    - Welcome message
    - Feature overview
    - Quick access links based on user role
-   - Statistics for admins
 
 2. team.html
    - Team list/grid view

@@ -18,7 +18,7 @@ TEST_DB = "sqlite:///:memory:"
 @pytest.fixture(scope="function")
 def engine():
     """Create a fresh database engine for each test"""
-    engine = create_engine(TEST_DB, echo=True)  # Add echo=True for debugging
+    engine = create_engine(TEST_DB, echo=False)  # Set echo=False to suppress SQL output
     Base.metadata.drop_all(engine)  # Clear all tables
     Base.metadata.create_all(engine)  # Create fresh tables
     return engine

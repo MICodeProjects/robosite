@@ -13,8 +13,11 @@ def test_lesson_component_view(auth_client, init_controllers):
     assert response.status_code == 200
       # Check if lesson_component content is displayed
     lesson_component = next(c for c in SAMPLE_LESSON_COMPONENTS if c['id'] == 1)
-    assert bytes(lesson_component['title'].encode()) in response.data
+    assert bytes(lesson_component['name'].encode()) in response.data
     assert bytes(lesson_component['content'].encode()) in response.data
+    # Check if lesson_component type is displayed
+    if 'type' in lesson_component:
+        assert bytes(str(lesson_component['type']).encode()) in response.data
 
 def test_create_lesson_component(auth_client, init_controllers):
     """Test lesson_component creation."""

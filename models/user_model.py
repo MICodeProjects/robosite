@@ -33,13 +33,13 @@ class UserModel:
         try:
             # Initialize database connection
             if DB_name.startswith('sqlite:///'):
-                self.engine = create_engine(DB_name, echo=True)  # Add echo=True for debugging
+                self.engine = create_engine(DB_name, echo=False)  # Set echo=False to suppress SQL output
             else:
                 db_path = os.path.join(self.data_dir, DB_name)
-                self.engine = create_engine(f'sqlite:///{db_path}', echo=True)
+                self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
             
             Base.metadata.create_all(self.engine)
-            self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)  # Add expire_on_commit=False
+            self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
             
         except Exception as e:
             print(f"Error initializing database: {str(e)}")

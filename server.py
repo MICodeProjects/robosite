@@ -57,12 +57,30 @@ def init_database():
     lesson_model.initialize_DB(DB_name=db_url)
     lesson_component_model.initialize_DB(DB_name=db_url)
     
+    # Create default teams if they don't exist
+    default_teams = ["phoenixes", "pigeons", "teachers"]
+    team_ids = {}
+    for team_name in default_teams:
+        team_exists = team_model.exists(team=team_name)
+        if team_exists==False:
+            team_result = team_model.create(team_name)
+            if team_result["status"] == "success":
+                team_ids[team_name] = team_result["data"]["id"]
+                print(f"Team '{team_name}' created successfully!")
+            else:
+                print(f"Error creating team '{team_name}': {team_result['data']}")
+        else:
+            team_data = team_model.get_team(team=team_name)["data"]
+            team_ids[team_name] = team_data["id"]
+            
     # Create admin user if not exists
     if not user_model.exists(email='admin@robotics.com')["data"]:
+        # Ensure team ID 1 exists
+        admin_team_id = team_ids.get("phoenixes", 1)  # Default to 1 if "phoenixes" doesn't exist
         user_model.create({
             'email': 'admin@robotics.com',
             'access': 3,
-            'team_id': 1  # Assuming team ID 1 exists, otherwise create a team first
+            'team_id': admin_team_id
         })
         print("Admin user created successfully!")
     
@@ -87,10 +105,7 @@ def login():
     """Login page."""
     return session_controller.login()
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """Register page."""
-    return session_controller.register()
+
 
 @app.route('/profile')
 def profile():
@@ -106,6 +121,19 @@ def settings():
 def logout():
     """Logout page."""
     return session_controller.logout()
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    return session_controller.register()
+
+# If you want 'teams_manage' or 'statistics', define them:
+# @app.route('/teams/manage')
+# def teams_manage():
+#     ...
+
+# @app.route('/statistics')
+# def statistics():
+#     ...
 
 # Routes using add_url_rule for cleaner organization
 

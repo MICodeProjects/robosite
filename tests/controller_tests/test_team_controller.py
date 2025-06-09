@@ -17,10 +17,6 @@ def test_team_view(auth_client, init_controllers):
     for team in SAMPLE_TEAMS:
         assert bytes(team['name'].encode()) in response.data
     
-    # Check if team statistics are included
-    assert b'completed_assignments' in response.data
-    assert b'pending_assignments' in response.data
-    assert b'completion_rate' in response.data
 
 def test_create_team(auth_client, init_controllers):
     """Test team creation."""
@@ -48,18 +44,6 @@ def test_update_team(auth_client, init_controllers):
     # Verify team was updated
     response = auth_client.get('/teams')
     assert b'super_phoenixes' in response.data
-
-def test_team_stats(auth_client, init_controllers):
-    """Test team statistics calculation."""
-    response = auth_client.get('/teams')
-    assert response.status_code == 200
-    
-    # Check if all teams have statistics
-    for team in SAMPLE_TEAMS:
-        assert bytes(f'{team["name"]}' in response.data)
-        assert b'completed_assignments' in response.data
-        assert b'pending_assignments' in response.data
-        assert b'completion_rate' in response.data
 
 def test_unauthorized_team_operations(client, init_controllers):
     """Test unauthorized team operations."""

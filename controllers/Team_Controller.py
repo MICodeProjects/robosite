@@ -22,14 +22,7 @@ class TeamController:
         all_users_result = self.user_model.get_all()
         all_users = all_users_result['data'] if all_users_result['status'] == 'success' else []
         
-        # Calculate team statistics
-        for team in teams:
-            # Add placeholder stats for now
-            team['stats'] = {
-                'completed_assignments': 0,
-                'pending_assignments': 0,
-                'completion_rate': 0
-            }
+
         
         return render_template('team.html', teams=teams, all_users=all_users)
     
