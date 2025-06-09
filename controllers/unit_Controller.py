@@ -1,17 +1,21 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from models.unit_model import UnitModel
+from models.user_model import UserModel
 from models.lesson_model import LessonModel
 
 class UnitController:
-    def __init__(self, unit_model: UnitModel, lesson_model: LessonModel):
+    def __init__(self, unit_model: UnitModel, lesson_model: LessonModel, user_model: UserModel):
         self.unit_model = unit_model
         self.lesson_model = lesson_model
     
     def get_current_user(self):
         """Get the current user from the session."""
+        if 'user' in session and session['user'].get('email'):
+            return session['user']
         if 'user_email' in session:
             result = self.user_model.get(session['user_email'])
             if result['status'] == 'success':
+                session['user'] = result['data']
                 return result['data']
         return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
     
@@ -26,10 +30,10 @@ class UnitController:
         
         # For each unit, get its lessons
         for unit in units:
-            lessons_result = self.lesson_model.get_by_unit(unit['id'])
+            lessons_result = self.lesson_model.get_by_unit_id(unit['id'])
             unit['lessons'] = lessons_result['data'] if lessons_result['status'] == 'success' else []
         
-        return render_template('units.html', units=units)
+        return render_template('units.html', units=units, user=current_user)
     
     def create(self):
         """Create a new unit."""

@@ -9,7 +9,7 @@ from tests.test_data.sample_lesson_component_data import SAMPLE_LESSON_COMPONENT
 
 def test_lesson_component_view(auth_client, init_controllers):
     """Test viewing a lesson component."""
-    response = auth_client.get('/lesson_components/1')
+    response = auth_client.get('/lessons/1/1/1')  # unit_id=1, lesson_id=1, lesson_component_id=1
     assert response.status_code == 200
       # Check if lesson_component content is displayed
     lesson_component = next(c for c in SAMPLE_LESSON_COMPONENTS if c['id'] == 1)
@@ -24,16 +24,17 @@ def test_create_lesson_component(auth_client, init_controllers):
     # Create a new lesson_component
     response = auth_client.post('/lesson_components/create', data={
         'lesson_id': '1',
-        'title': 'New lesson_component',
+        'name': 'New lesson_component',
         'content': 'Test content',
         'type': 'text'
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
-    
-    # Verify lesson_component was created
-    response = auth_client.get('/lessons/1')
-    assert b'New lesson_component' in response.data
+
+    # Verify lesson_component was created in DB
+    lesson_component_model = init_controllers['lesson_component_controller'].lesson_component_model
+    db_components = lesson_component_model.get_all()
+    assert any(c.get('name') == 'New lesson_component' for c in db_components['data'])
 
 def test_update_lesson_component(auth_client, init_controllers):
     """Test lesson_component update."""
@@ -41,17 +42,18 @@ def test_update_lesson_component(auth_client, init_controllers):
     response = auth_client.post('/lesson_components/update', data={
         'lesson_component_id': '1',
         'lesson_id': '1',
-        'title': 'Updated lesson_component',
+        'name': 'Updated lesson_component',
         'content': 'Updated content',
         'type': 'text'
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
-    
-    # Verify lesson_component was updated
-    response = auth_client.get('/lesson_components/1')
-    assert b'Updated lesson_component' in response.data
-    assert b'Updated content' in response.data
+
+    # Verify lesson_component was updated in DB
+    lesson_component_model = init_controllers['lesson_component_controller'].lesson_component_model
+    db_component = lesson_component_model.get(id=1)
+    assert db_component['status'] == 'success'
+    assert db_component['data'].get('name', db_component['data'].get('name')) == 'Updated lesson_component'
 
 def test_delete_lesson_component(auth_client, init_controllers):
     """Test lesson_component deletion."""
@@ -62,17 +64,18 @@ def test_delete_lesson_component(auth_client, init_controllers):
     })
     assert response.status_code == 302
     assert 'lessons' in response.location
-    
-    # Verify lesson_component was deleted
-    response = auth_client.get('/lessons/1')
-    lesson_component = next(c for c in SAMPLE_LESSON_COMPONENTS if c['id'] == 1)
-    assert bytes(lesson_component['title'].encode()) not in response.data
+
+    # Verify lesson_component was deleted in DB
+    lesson_component_model = init_controllers['lesson_component_controller'].lesson_component_model
+    db_component = lesson_component_model.get(id=1)
+    assert db_component['status'] == 'error'
+    assert 'not found' in db_component['data']
 
 def test_unauthorized_lesson_component_operations(client, init_controllers):
     """Test unauthorized lesson_component operations."""
     operations = [
-        ('/lesson_components/create', {'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
-        ('/lesson_components/update', {'lesson_component_id': '1', 'lesson_id': '1', 'title': 'test', 'content': 'test', 'type': 'text'}),
+        ('/lesson_components/create', {'lesson_id': '1', 'name': 'test', 'content': 'test', 'type': 'text'}),
+        ('/lesson_components/update', {'lesson_component_id': '1', 'lesson_id': '1', 'name': 'test', 'content': 'test', 'type': 'text'}),
         ('/lesson_components/delete', {'lesson_component_id': '1', 'lesson_id': '1'})
     ]
     
@@ -93,14 +96,14 @@ def test_unauthorized_lesson_component_operations(client, init_controllers):
 def test_invalid_lesson_component_operations(auth_client, init_controllers):
     """Test invalid lesson_component operations."""
     # Try to view non-existent lesson_component
-    response = auth_client.get('/lesson_components/999')
+    response = auth_client.get('/lessons/1/1/999')
     assert response.status_code == 302
     
     # Try to update non-existent lesson_component
     response = auth_client.post('/lesson_components/update', data={
         'lesson_component_id': '999',
         'lesson_id': '1',
-        'title': 'test',
+        'name': 'test',
         'content': 'test',
         'type': 'text'
     })

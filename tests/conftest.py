@@ -156,7 +156,7 @@ def init_controllers(app):
     with Session() as session:
         for lesson_data in SAMPLE_LESSONS:
             lesson = Lesson(
-                name=lesson_data.get("name") or lesson_data.get("title", ""),
+                name=lesson_data.get("name"),
                 type=lesson_data.get("type", 1),
                 img=lesson_data.get("img", ""),
                 unit_id=unit_map.get(lesson_data['unit_id'])
@@ -196,9 +196,9 @@ def init_controllers(app):
     
     user_controller = UserController(user_model)
     team_controller = TeamController(team_model, user_model)
-    unit_controller = UnitController(unit_model, lesson_model)
-    lesson_controller = LessonController(lesson_model, lesson_component_model)
-    lesson_component_controller = LessonComponentController(lesson_component_model)
+    unit_controller = UnitController(unit_model, lesson_model, user_model)
+    lesson_controller = LessonController(lesson_model, lesson_component_model, user_model)
+    lesson_component_controller = LessonComponentController(lesson_component_model, user_model)
     session_controller = SessionController(user_model, team_model)
     
     # Pass team_map to auth_client

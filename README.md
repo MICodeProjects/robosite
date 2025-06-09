@@ -191,7 +191,7 @@ flowchart TD
 
 #### Lesson Controller
 - Routes:
-  - GET `/lessons/<id>`: View specific lesson
+  - GET `/lessons/<unit_id>/<lesson_id>`: View specific lesson
   - POST `/lessons/create`: Create new lesson (Admin only)
   - POST `/lessons/update`: Update lesson (Admin only)
   - POST `/lessons/delete`: Delete lesson (Admin only)
@@ -201,7 +201,7 @@ flowchart TD
 
 #### Lesson Component Controller
 - Routes:
-  - GET `/lesson_components/<id>`: View lesson component
+  - GET `/lessons/<unit_id>/<lesson_id>/<lesson_component_id>`: View lesson component
   - POST `/lesson_components/create`: Create lesson component (Admin only)
   - POST `/lesson_components/update`: Update lesson component (Admin only)
   - POST `/lesson_components/delete`: Delete lesson component (Admin only)

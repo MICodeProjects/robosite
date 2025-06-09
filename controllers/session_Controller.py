@@ -17,10 +17,7 @@ class SessionController:
 
     def index(self):
         """Home page."""
-        # Only read from session, do not set session['user'] or session['user_email']
         current_user = self.get_current_user()
-        if current_user.get('email'):
-            flash('Welcome to Robosite', 'success')
         return render_template('index.html', user=current_user)
 
     def login(self):
@@ -92,12 +89,11 @@ class SessionController:
 
     def get_current_user(self):
         """Get the current user from the session."""
-        # Prefer session['user'] if present (set after login/register)
-        if 'user' in session and session['user'].get('email'):
-            return session['user']
+        # Always refresh session['user'] from DB if user_email is present
         if 'user_email' in session:
             result = self.user_model.get(session['user_email'])
             if result['status'] == 'success':
+                session['user'] = result['data']
                 return result['data']
             session.pop('user', None)
             session.pop('user_email', None)

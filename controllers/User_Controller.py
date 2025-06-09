@@ -7,9 +7,12 @@ class UserController:
     
     def get_current_user(self):
         """Get the current user from the session."""
+        if 'user' in session and session['user'].get('email'):
+            return session['user']
         if 'user_email' in session:
             result = self.user_model.get(session['user_email'])
             if result['status'] == 'success':
+                session['user'] = result['data']
                 return result['data']
         return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
     

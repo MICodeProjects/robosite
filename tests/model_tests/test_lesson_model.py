@@ -60,10 +60,10 @@ def setup_lesson_data(engine, session, lesson):  # Add engine and lesson depende
         # Create sample lessons
         for lesson_data in SAMPLE_LESSONS:
             lesson = Lesson(
-                name=lesson_data.get("name") or lesson_data.get("name", ""),  # Handle name
-                type=lesson_data.get("type", 1),  # Default type to 1 if not specified
-                img=lesson_data.get("img", ""),  # Handle optional img field
-                unit_id=lesson_data.get("unit_id")  # Handle optional unit relationship
+                name=lesson_data.get("name"),
+                type=lesson_data.get("type", 1),
+                img=lesson_data.get("img", ""),
+                unit_id=lesson_data.get("unit_id")
             )
             session.add(lesson)
         session.commit()

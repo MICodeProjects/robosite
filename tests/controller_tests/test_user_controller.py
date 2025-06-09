@@ -13,16 +13,19 @@ def test_user_update(auth_client, init_controllers):
     response = auth_client.post('/users/update', data={
         'email': 'member1@robotics.com',
         'team': 'pigeons',
-        'access': '3'
+        'access': 3
     })
     assert response.status_code == 302
     assert 'teams' in response.location
-    
-    # Verify user was updated
-    response = auth_client.get('/teams')
-    assert b'member1@robotics.com' in response.data
-    assert b'pigeons' in response.data
-    assert b'Captain' in response.data
+
+    # Verify user was updated in the database
+    user_model = init_controllers['user_controller'].user_model
+    db_user = user_model.get('member1@robotics.com')['data']
+    assert db_user['access'] == 3
+    # You may need to map team name to team_id for this check
+    team_model = init_controllers['team_controller'].team_model
+    pigeons_team = team_model.get_team(team='pigeons')['data']
+    assert db_user['team_id'] == pigeons_team['id']
 
 def test_user_delete(auth_client, init_controllers):
     """Test deleting a user."""
@@ -32,10 +35,12 @@ def test_user_delete(auth_client, init_controllers):
     })
     assert response.status_code == 302
     assert 'teams' in response.location
-    
-    # Verify user was deleted
-    response = auth_client.get('/teams')
-    assert b'member1@robotics.com' not in response.data
+
+    # Verify user was deleted from the database
+    user_model = init_controllers['user_controller'].user_model
+    db_user = user_model.get('member1@robotics.com')
+    assert db_user['status'] == 'error'
+    assert 'not found' in db_user['data']
 
 def test_unauthorized_user_operations(client, init_controllers):
     """Test unauthorized user operations."""
@@ -43,13 +48,18 @@ def test_unauthorized_user_operations(client, init_controllers):
         ('/users/update', {'email': 'test@test.com', 'team': 'test', 'access': '2'}),
         ('/users/delete', {'email': 'test@test.com'})
     ]
-    
+    user_model = init_controllers['user_controller'].user_model
+
     # Test with no authentication
     for route, data in operations:
         response = client.post(route, data=data)
         assert response.status_code == 302
         assert 'login' in response.location
-    
+        # No DB change should occur
+        db_user = user_model.get(data['email'])
+        # Should be error or not found (since test@test.com is not in sample data)
+        assert db_user['status'] == 'error'
+
     # Test with insufficient access level
     with client.session_transaction() as session:
         session['user_email'] = 'member1@robotics.com'
@@ -63,9 +73,13 @@ def test_unauthorized_user_operations(client, init_controllers):
         response = client.post(route, data=data)
         assert response.status_code == 302
         assert 'index' in response.location
+        # No DB change should occur
+        db_user = user_model.get(data['email'])
+        assert db_user['status'] == 'error'
 
 def test_invalid_user_operations(auth_client, init_controllers):
     """Test invalid user operations."""
+    user_model = init_controllers['user_controller'].user_model
     # Try to update non-existent user
     response = auth_client.post('/users/update', data={
         'email': 'nonexistent@robotics.com',
@@ -74,13 +88,17 @@ def test_invalid_user_operations(auth_client, init_controllers):
     })
     assert response.status_code == 302
     assert 'teams' in response.location
-    
+    db_user = user_model.get('nonexistent@robotics.com')
+    assert db_user['status'] == 'error'
+
     # Try to delete non-existent user
     response = auth_client.post('/users/delete', data={
         'email': 'nonexistent@robotics.com'
     })
     assert response.status_code == 302
     assert 'teams' in response.location
+    db_user = user_model.get('nonexistent@robotics.com')
+    assert db_user['status'] == 'error'
 
 def test_current_user_session(auth_client, init_controllers):
     """Test current user session management."""
@@ -99,7 +117,8 @@ def test_user_access_levels(client, init_controllers):
         ('member1@robotics.com', 2),
         ('captain@robotics.com', 3)
     ]
-    
+    user_model = init_controllers['user_controller'].user_model
+
     protected_routes = [
         '/teams',
         '/units',

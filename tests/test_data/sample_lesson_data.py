@@ -2,7 +2,7 @@
 
 SAMPLE_LESSONS = [
     {
-        "title": "What is Robotics?",
+        "name": "What is Robotics?",
         "id": 1,
         "description": "An introduction to robotics fundamentals",
         "order": 1,

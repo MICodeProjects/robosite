@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models.database import Base
@@ -21,7 +21,7 @@ from controllers.lesson_component_Controller import LessonComponentController
 from controllers.session_Controller import SessionController
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # For session management
+app.secret_key = "your-very-secret-key"  # Use a constant key!
 
 # Set up static folder
 app.static_folder = 'static'
@@ -40,10 +40,13 @@ lesson_component_model = LessonComponentModel()
 # Initialize controller instances
 user_controller = UserController(user_model)
 team_controller = TeamController(team_model, user_model)
-unit_controller = UnitController(unit_model, lesson_model)
-lesson_controller = LessonController(lesson_model, lesson_component_model)
-lesson_component_controller = LessonComponentController(lesson_component_model)
+unit_controller = UnitController(unit_model, lesson_model, user_model)
+lesson_controller = LessonController(lesson_model, lesson_component_model, user_model, unit_model)
+lesson_component_controller = LessonComponentController(lesson_component_model, user_model, lesson_model, unit_model)
 session_controller = SessionController(user_model, team_model)
+
+# Make sessions permanent and set session lifetime
+app.permanent_session_lifetime = timedelta(days=7)  # or however long you want
 
 def init_database():
     """Initialize the SQLite database"""
@@ -153,13 +156,15 @@ app.add_url_rule('/units/update', 'units.update', view_func=unit_controller.upda
 app.add_url_rule('/units/delete', 'units.delete', view_func=unit_controller.delete, methods=['POST'])
 
 # Lesson routes
-app.add_url_rule('/lessons/<int:lesson_id>', 'lessons.view', view_func=lesson_controller.view)
+app.add_url_rule('/lessons/<int:unit_id>/<int:lesson_id>', 'lessons.view', view_func=lesson_controller.view)
 app.add_url_rule('/lessons/create', 'lessons.create', view_func=lesson_controller.create, methods=['POST'])
 app.add_url_rule('/lessons/update', 'lessons.update', view_func=lesson_controller.update, methods=['POST'])
 app.add_url_rule('/lessons/delete', 'lessons.delete', view_func=lesson_controller.delete, methods=['POST'])
 
 # lesson component routes
-app.add_url_rule('/lesson_components/<int:lesson_component_id>', 'lesson_components.view', view_func=lesson_component_controller.view)
+app.add_url_rule('/lessons/<int:unit_id>/<int:lesson_id>/<int:lesson_component_id>', 
+                 'lesson_components.view', 
+                 view_func=lesson_component_controller.view)
 app.add_url_rule('/lesson_components/create', 'lesson_components.create', view_func=lesson_component_controller.create, methods=['POST'])
 app.add_url_rule('/lesson_components/update', 'lesson_components.update', view_func=lesson_component_controller.update, methods=['POST'])
 app.add_url_rule('/lesson_components/delete', 'lesson_components.delete', view_func=lesson_component_controller.delete, methods=['POST'])
@@ -194,6 +199,10 @@ def check_access():
         return redirect(url_for('index'))
     
     return None
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 if __name__ == '__main__':
     # Initialize databases

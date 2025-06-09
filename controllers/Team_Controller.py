@@ -22,9 +22,7 @@ class TeamController:
         all_users_result = self.user_model.get_all()
         all_users = all_users_result['data'] if all_users_result['status'] == 'success' else []
         
-
-        
-        return render_template('team.html', teams=teams, all_users=all_users)
+        return render_template('team.html', teams=teams, all_users=all_users, user=current_user)
     
     def create_team(self):
         """Create a new team."""
@@ -71,8 +69,11 @@ class TeamController:
     
     def get_current_user(self):
         """Get the current user from the session."""
+        if 'user' in session and session['user'].get('email'):
+            return session['user']
         if 'user_email' in session:
             result = self.user_model.get(session['user_email'])
             if result['status'] == 'success':
+                session['user'] = result['data']
                 return result['data']
         return {'email': None, 'team': 'none', 'access': 1}  # Default guest user

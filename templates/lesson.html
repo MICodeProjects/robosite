@@ -5,28 +5,20 @@
 {% block content %}
 <div class="row h-100">
     <!-- Sidebar -->
-             <h5 class="modal-title">Add Lesson Component</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('lesson_components_create') }}" method="POST">
-                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="lessonComponentName" class="form-label">Lesson Component Name</label>
-                        <input type="text" class="form-control" id="lessonComponentName" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="lessonComponentType" class="form-label">Type</label>
-                        <select class="form-select" id="lessonComponentType" name="type" required>
     <div class="col-md-3 bg-light border-end">
         <div class="p-3 bg-primary text-white">
             <h3 class="h5 mb-1 text-truncate">{{ lesson.name }}</h3>
             <p class="small mb-0 text-white-50">{{ unit.name }}</p>
         </div>
-          <!-- Lesson Component Navigation -->
+        
+        <!-- Lesson Component Navigation -->
         <nav class="p-2">
-            {% if lesson_components %}            {% for lesson_component in lesson_components %}
-                <a href="{{ url_for('lesson_component', lesson_id=lesson.id, lesson_component_id=lesson_component.id) }}" 
+            {% if lesson_components %}            
+            {% for lesson_component in lesson_components %}
+                <a href="{{ url_for('lesson_components.view', 
+                    unit_id=unit.id,
+                    lesson_id=lesson.id, 
+                    lesson_component_id=lesson_component.id) }}" 
                    class="d-block p-2 mb-2 text-decoration-none rounded
                    {% if current_lesson_component and current_lesson_component.id == lesson_component.id %}
                    bg-primary text-white
@@ -56,7 +48,7 @@
         
         {% if user and user.access >= 3 %}
         <div class="p-3 border-top">
-            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addLessonComponentModal">
+            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#add_lesson_component_modal">
                 <i class="bi bi-plus-circle me-1"></i>Add Lesson Component
             </button>
         </div>
@@ -82,9 +74,10 @@
                     </div>
                     {% if user and user.access >= 3 %}
                     <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editLessonComponentModal{{ current_lesson_component.id }}">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#edit_lesson_component_modal{{ current_lesson_component.id }}">
                             <i class="bi bi-pencil me-1"></i>Edit
-                        </button>                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteLessonComponentModal{{ current_lesson_component.id }}">
+                        </button>                        
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete_lesson_component_modal{{ current_lesson_component.id }}">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
                     </div>
@@ -143,21 +136,25 @@
 
 {% if user and user.access >= 3 %}
 <!-- Add Component Modal -->
-<div class="modal fade" id="addLessonComponentModal" tabindex="-1">
+<div class="modal fade" id="add_lesson_component_modal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add Lesson Component</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('lesson_components_create') }}" method="POST">
+            <form action="{{ url_for('lesson_components.create') }}" method="POST">
                 <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <input type="hidden" name="unit_id" value="{{ unit.id }}">
+
                 <div class="modal-body">
-                    <div class="mb-3">                        <label for="lessonComponentName" class="form-label">Lesson Component Name</label>
-                        <input type="text" class="form-control" id="lessonComponentName" name="name" required>
+                    <div class="mb-3">                        
+                        <label for="lesson_component_name" class="form-label">Lesson Component Name</label>
+                        <input type="text" class="form-control" id="lesson_component_name" name="lesson_component_name" required>
                     </div>
-                    <div class="mb-3">                        <label for="lessonComponentType" class="form-label">Type</label>
-                        <select class="form-select" id="lessonComponentType" name="type" required>
+                    <div class="mb-3">                        
+                        <label for="lesson_component_type" class="form-label">Type</label>
+                        <select class="form-select" name="lesson_component_type"id="lesson_component_type" name="type" required>
                             <option value="1">Text</option>
                             <option value="2">Video</option>
                             <option value="3">Quiz</option>
@@ -165,8 +162,8 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="lessonComponentContent" class="form-label">Content</label>
-                        <textarea class="form-control" id="lessonComponentContent" name="content" rows="5"></textarea>
+                        <label for="lesson_component_content" class="form-label">Content</label>
+                        <textarea class="form-control" name="lesson_component_content" id="lesson_component_content" name="content" rows="5"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -178,34 +175,37 @@
     </div>
 </div>            {% if current_lesson_component %}
 <!-- Edit Lesson Component Modal -->
-<div class="modal fade" id="editLessonComponentModal{{ current_lesson_component.id }}" tabindex="-1">
+<div class="modal fade" id="edit_lesson_component_modal{{ current_lesson_component.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Lesson Component</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('lesson_components_update', id=current_component.id) }}" method="POST">
+            <form action="{{ url_for('lesson_components.update', id=current_lesson_component.id) }}" method="POST">
+                <input type="hidden" name="lesson_component_id" value="{{ current_lesson_component.id }}">
                 <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <input type="hidden" name="unit_id" value="{{ unit.id }}">
+
                 <div class="modal-body">
                     <div class="mb-3">                        
-                        <label for="editLessonComponentName" class="form-label">Lesson Component Name</label>
-                        <input type="text" class="form-control" id="editLessonComponentName" 
-                               name="name" value="{{ current_lesson_component.name }}" required>
+                        <label for="edit_lesson_component_name" class="form-label">Lesson Component Name</label>
+                        <input type="text" class="form-control" id="edit_lesson_component_name" 
+                               name="lesson_component_name" value="{{ current_lesson_component.name }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editLessonComponentType" class="form-label">Type</label>
-                        <select class="form-select" id="editLessonComponentType" name="type" required>
-                            <option value="1" {% if current_component.type == 1 %}selected{% endif %}>Text</option>
-                            <option value="2" {% if current_component.type == 2 %}selected{% endif %}>Video</option>
-                            <option value="3" {% if current_component.type == 3 %}selected{% endif %}>Quiz</option>
-                            <option value="4" {% if current_component.type == 4 %}selected{% endif %}>Exercise</option>
+                        <label for="edit_lesson_component_type" class="form-label">Type</label>
+                        <select class="form-select" id="edit_lesson_component_type" name="lesson_component_type" required>
+                            <option value="1" {% if current_lesson_component.type == 1 %}selected{% endif %}>Text</option>
+                            <option value="2" {% if current_lesson_component.type == 2 %}selected{% endif %}>Video</option>
+                            <option value="3" {% if current_lesson_component.type == 3 %}selected{% endif %}>Quiz</option>
+                            <option value="4" {% if current_lesson_component.type == 4 %}selected{% endif %}>Exercise</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editLessonComponentContent" class="form-label">Content</label>
-                        <textarea class="form-control" id="editLessonComponentContent" 
-                                  name="content" rows="5">{{ current_component.content }}</textarea>
+                        <label for="edit_lesson_component_content" class="form-label">Content</label>
+                        <textarea class="form-control" id="edit_lesson_component_content" 
+                                  name="lesson_component_content" rows="5">{{ current_lesson_component.content }}</textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -218,7 +218,7 @@
 </div>
 
 <!-- Delete Lesson Component Modal -->
-<div class="modal fade" id="deleteLessonComponentModal{{ current_lesson_component.id }}" tabindex="-1">
+<div class="modal fade" id="delete_lesson_component_modal{{ current_lesson_component.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">                
@@ -226,12 +226,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete "<strong>{{ current_component.name }}</strong>"?</p>
+                <p>Are you sure you want to delete "<strong>{{ current_lesson_component.name }}</strong>"?</p>
                 <p class="text-danger"><small>This action cannot be undone.</small></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="{{ url_for('lesson_components_delete', id=current_component.id) }}" method="POST" class="d-inline">
+                <form action="{{ url_for('lesson_components.delete', id=current_lesson_component.id) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="unit_id" value="{{ unit.id }}">
+                    <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                    <input type="hidden" name="lesson_component_id" value="{{ current_lesson_component.id }}">
                     <button type="submit" class="btn btn-danger">Delete Lesson Component</button>
                 </form>
             </div>
@@ -274,10 +277,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Setup for Add Lesson Component form
-    setupTypeContentInteraction('lessonComponentType', 'lessonComponentContent');
+    setupTypeContentInteraction('lesson_component_type', 'lesson_component_content');
     
     // Setup for Edit Lesson Component form
-    setupTypeContentInteraction('editLessonComponentType', 'editLessonComponentContent');
+    setupTypeContentInteraction('edit_lesson_component_type', 'edit_lesson_component_content');
 });
 </script>
 {% endblock %}

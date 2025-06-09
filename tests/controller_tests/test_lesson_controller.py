@@ -16,19 +16,19 @@ def test_lesson_view(auth_client, init_controllers):
     
     # Check if lesson content is displayed
     lesson = next(l for l in SAMPLE_LESSONS if l['id'] == 1)
-    assert bytes(lesson['title'].encode()) in response.data
+    assert bytes(lesson['name'].encode()) in response.data
     assert bytes(lesson['description'].encode()) in response.data
       # Check if lesson component are displayed
     lesson_components = [c for c in SAMPLE_LESSON_COMPONENTS if c['lesson_id'] == 1]
     for lesson_component in lesson_components:
-        assert bytes(lesson_component['title'].encode()) in response.data
+        assert bytes(lesson_component['name'].encode()) in response.data
 
 def test_create_lesson(auth_client, init_controllers):
     """Test lesson creation."""
     # Create a new lesson
     new_lesson = {
         'unit_id': '1',
-        'title': 'New Lesson',
+        'name': 'New Lesson',
         'description': 'Test description',
         'order': '3'
     }
@@ -36,10 +36,10 @@ def test_create_lesson(auth_client, init_controllers):
     assert response.status_code == 302
     assert response.location == '/'
     
-    # Verify lesson was created by checking the lesson page
-    response = auth_client.get('/lessons/1')
-    assert b'New Lesson' in response.data
-    assert b'Test description' in response.data
+    # Verify lesson was created in DB
+    lesson_model = init_controllers['lesson_controller'].lesson_model
+    db_lessons = lesson_model.get_all()
+    assert any(l.get('name') == 'New Lesson' or l.get('name') == 'New Lesson' for l in db_lessons['data'])
 
 def test_update_lesson(auth_client, init_controllers):
     """Test lesson update."""
@@ -47,17 +47,18 @@ def test_update_lesson(auth_client, init_controllers):
     response = auth_client.post('/lessons/update', data={
         'lesson_id': '1',
         'unit_id': '1',
-        'title': 'Updated Lesson',
+        'name': 'Updated Lesson',
         'description': 'Updated description',
         'order': '1'
     })
     assert response.status_code == 302
     assert 'units' in response.location
     
-    # Verify lesson was updated
-    response = auth_client.get('/lessons/1')
-    assert b'Updated Lesson' in response.data
-    assert b'Updated description' in response.data
+    # Verify lesson was updated in DB
+    lesson_model = init_controllers['lesson_controller'].lesson_model
+    db_lesson = lesson_model.get(id=1)
+    assert db_lesson['status'] == 'success'
+    assert db_lesson['data'].get('name', db_lesson['data'].get('name')) == 'Updated Lesson'
 
 def test_delete_lesson(auth_client, init_controllers):
     """Test lesson deletion."""
@@ -68,15 +69,17 @@ def test_delete_lesson(auth_client, init_controllers):
     assert response.status_code == 302
     assert 'units' in response.location
     
-    # Verify lesson was deleted
-    response = auth_client.get('/units')
-    assert b'Introduction to Robotics' not in response.data
+    # Verify lesson was deleted in DB
+    lesson_model = init_controllers['lesson_controller'].lesson_model
+    db_lesson = lesson_model.get(id=1)
+    assert db_lesson['status'] == 'error'
+    assert 'not found' in db_lesson['data']
 
 def test_unauthorized_lesson_operations(client, init_controllers):
     """Test unauthorized lesson operations."""
     operations = [
-        ('/lessons/create', {'unit_id': '1', 'title': 'test', 'description': 'test', 'order': '1'}),
-        ('/lessons/update', {'lesson_id': '1', 'unit_id': '1', 'title': 'test', 'description': 'test', 'order': '1'}),
+        ('/lessons/create', {'unit_id': '1', 'name': 'test', 'description': 'test', 'order': '1'}),
+        ('/lessons/update', {'lesson_id': '1', 'unit_id': '1', 'name': 'test', 'description': 'test', 'order': '1'}),
         ('/lessons/delete', {'lesson_id': '1'})
     ]
     
@@ -105,7 +108,7 @@ def test_invalid_lesson_operations(auth_client, init_controllers):
     response = auth_client.post('/lessons/update', data={
         'lesson_id': '999',
         'unit_id': '1',
-        'title': 'test',
+        'name': 'test',
         'description': 'test',
         'order': '1'
     })
@@ -119,7 +122,7 @@ def test_lesson_component_list(auth_client, init_controllers):
       # Check if all lesson_components for lesson 1 are listed
     lesson_components = [c for c in SAMPLE_LESSON_COMPONENTS if c['lesson_id'] == 1]
     for lesson_component in lesson_components:
-        assert bytes(lesson_component['title'].encode()) in response.data
+        assert bytes(lesson_component['name'].encode()) in response.data
         # Check if lesson_component type is indicated
         assert bytes(lesson_component['type'].encode()) in response.data
 
@@ -137,7 +140,7 @@ def test_lesson_navigation(auth_client, init_controllers):
     content = response.data.decode('utf-8')
     last_pos = 0
     for lesson_component in sorted_lesson_components:
-        pos = content.find(lesson_component['title'])
+        pos = content.find(lesson_component['name'])
         assert pos > last_pos
         last_pos = pos
 

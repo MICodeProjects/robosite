@@ -22,14 +22,6 @@
         </div>
         {% endif %}
     </div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-    
     <div class="col-md-6 d-none d-md-block">
         <div class="text-center">
             <img src="{{ url_for('static', filename='img/robot.png') }}" alt="Robot Illustration" class="img-fluid" style="max-height: 400px;" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23f0f1f3%22%2F%3E%3Ccircle%20cx%3D%22200%22%20cy%3D%22150%22%20r%3D%2260%22%20fill%3D%22%231865f2%22%2F%3E%3Crect%20x%3D%22140%22%20y%3D%22220%22%20width%3D%22120%22%20height%3D%22140%22%20fill%3D%22%231865f2%22%2F%3E%3Ccircle%20cx%3D%22170%22%20cy%3D%22140%22%20r%3D%2215%22%20fill%3D%22white%22%2F%3E%3Ccircle%20cx%3D%22230%22%20cy%3D%22140%22%20r%3D%2215%22%20fill%3D%22white%22%2F%3E%3Crect%20x%3D%22110%22%20y%3D%22260%22%20width%3D%2230%22%20height%3D%2280%22%20fill%3D%22%231865f2%22%2F%3E%3Crect%20x%3D%22260%22%20y%3D%22260%22%20width%3D%2230%22%20height%3D%2280%22%20fill%3D%22%231865f2%22%2F%3E%3C%2Fsvg%3E'">
