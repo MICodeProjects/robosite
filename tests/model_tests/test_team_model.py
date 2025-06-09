@@ -91,7 +91,7 @@ def test_team_creation(team, setup_team_data):
 
 def test_team_get_by_name(team, setup_team_data):
     """Test retrieving a team by name"""
-    result = team.get_team(team="phoenixes")
+    result = team.get(team="phoenixes")
     
     assert result["status"] == "success"
     assert result["data"]["name"] == "phoenixes"
@@ -106,7 +106,7 @@ def test_team_get_all(team, setup_team_data):
 
 def test_invalid_team_name(team, setup_team_data):
     """Test getting a nonexistent team"""
-    result = team.get_team(team="nonexistent")
+    result = team.get(team="nonexistent")
     
     assert result["status"] == "error"
     assert "not found" in result["data"]

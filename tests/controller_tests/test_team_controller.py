@@ -33,7 +33,7 @@ def test_create_team(auth_client, init_controllers):
 
     # Verify team was created in DB
     team_model = init_controllers['team_controller'].team_model
-    db_team = team_model.get_team(team='dragons')
+    db_team = team_model.get(team='dragons')
     assert db_team['status'] == 'success'
     assert db_team['data']['name'] == 'dragons'
 
@@ -48,7 +48,7 @@ def test_update_team(auth_client, init_controllers):
 
     # Verify team was updated in DB
     team_model = init_controllers['team_controller'].team_model
-    db_team = team_model.get_team(team='super_phoenixes')
+    db_team = team_model.get(team='super_phoenixes')
     assert db_team['status'] == 'success'
     assert db_team['data']['name'] == 'super_phoenixes'
 
@@ -66,7 +66,7 @@ def test_unauthorized_team_operations(client, init_controllers):
         assert response.status_code == 302
         assert 'login' in response.location
         # No DB change should occur
-        db_team = team_model.get_team(team=data.get('team_name', 'test'))
+        db_team = team_model.get(team=data.get('team_name', 'test'))
         assert db_team['status'] == 'error' or db_team['data'] is None
 
     # Test with insufficient access level
@@ -82,5 +82,5 @@ def test_unauthorized_team_operations(client, init_controllers):
         response = client.post(route, data=data)
         assert response.status_code == 302
         assert 'index' in response.location
-        db_team = team_model.get_team(team=data.get('team_name', 'test'))
+        db_team = team_model.get(team=data.get('team_name', 'test'))
         assert db_team['status'] == 'error' or db_team['data'] is None

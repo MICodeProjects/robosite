@@ -9,14 +9,22 @@
         <p class="lead">View team members and assignments for each robotics team</p>
     </div>
 
-    {% if session.user and session.user.access >= 2 %}
+    {% if user and user.access >= 2 %}
     <div class="team-info-card mb-4">
-        <h3>Your Team: {{ session.user.team|capitalize }}</h3>
-        {% if session.user.access == 3 %}
+        <h3>Your Team: {{ user.team|capitalize }}</h3>
+        {% if user.access == 3 %}
         <div class="badge bg-primary">Captain</div>
         {% else %}
         <div class="badge bg-secondary">Member</div>
         {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Debug information -->
+    {% if user and user.access >= 3 %}
+    <div class="debug-info mb-4">
+        <p>Number of teams: {{ teams|length }}</p>
+        <p>Number of users: {{ users|length }}</p>
     </div>
     {% endif %}
 
@@ -27,7 +35,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="h5 mb-0">{{ team.name|capitalize }}</h3>
 
-                    {% if session.user and session.user.access == 3 %}                
+                    {% if user and user.access == 3 %}                
                     <div class="admin-controls">
                         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editTeamModal{{ team.id }}">
                             <i class="bi bi-pencil"></i> Edit Team
@@ -58,17 +66,17 @@
                     {% endif %}
                 </div>
 
-                {% if session.user and session.user.access == 3 %}
+                {% if user and user.access == 3 %}
                 <div class="card-footer">
                     <form action="{{ url_for('users.update') }}" method="POST" class="mb-0">
                         <div class="input-group">
                             <select name="email" class="form-select" required>
                                 <option value="">Select User</option>
-                                {% for user in all_users %}
+                                {% for user in users %}
                                 <option value="{{ user.email }}">{{ user.email }}</option>
                                 {% endfor %}
                             </select>
-                            <input type="hidden" name="team" value="{{ team.name }}">
+                            <input type="hidden" name="team_id" value="{{ team.id }}">
                             <button type="submit" class="btn btn-success">
                                 <i class="bi bi-person-plus"></i> Add
                             </button>

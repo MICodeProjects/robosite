@@ -19,10 +19,10 @@ class TeamController:
         teams = result['data'] if result['status'] == 'success' else []
         
         # Get all users for admin section
-        all_users_result = self.user_model.get_all()
-        all_users = all_users_result['data'] if all_users_result['status'] == 'success' else []
+        users_result = self.user_model.get_all()
+        users = users_result['data'] if users_result['status'] == 'success' else []
         
-        return render_template('team.html', teams=teams, all_users=all_users, user=current_user)
+        return render_template('team.html', teams=teams, users=users, user=current_user)
     
     def create_team(self):
         """Create a new team."""

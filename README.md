@@ -239,7 +239,7 @@ direction LR
         +List[User] users
         --
         +Dict create(String team_name)
-        +Dict get_team(String team, Integer id)
+        +Dict get(String team, Integer id)
         +Dict get_all_teams()
         +Dict exists(String team, Integer id)
     }
@@ -336,7 +336,7 @@ classDiagram
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
 - `exists(team: Optional[str], id: Optional[int]) -> bool`: Check team existence
 - `create(team_name: str) -> Dict[status, data]`: Create new team
-- `get_team(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get team by name or ID
+- `get(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get team by name or ID
 - `get_all_teams() -> Dict[status, List[team]]`: List all teams
 
 #### UnitModel

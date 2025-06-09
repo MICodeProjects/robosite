@@ -200,23 +200,31 @@ class UserModel:
             if 'email' not in user_info:
                 return {"status": "error", "data": "Email is required"}
             
-
+            # Get current user data
+            current_user = self.get(user_info['email'])
+            if current_user["status"] == "error":
+                return current_user
             
-            # Validate access level if provided
-            if 'access' in user_info and user_info['access'] not in [1, 2, 3]:
+            # Merge current data with new data
+            update_data = {
+                'email': user_info['email'],
+                'team_id': user_info.get('team_id', current_user["data"]["team_id"]),
+                'access': user_info.get('access', current_user["data"]["access"])
+            }
+            
+            # Validate access level
+            if update_data['access'] not in [1, 2, 3]:
                 return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
             
             session = self.Session()
             try:
                 user = session.query(User).filter_by(email=user_info['email']).first()
                 if not user:
-                    return {"status": "error", "data": f"User with email {user_info['email']} not found"}
+                    return {"status": "error", "data": f"User with email {update_data['email']} not found"}
                 
-                # Update fields if provided
-                if 'team_id' in user_info:
-                    user.team_id = user_info['team_id']
-                if 'access' in user_info:
-                    user.access = user_info['access']
+                # Update all fields with merged data
+                user.team_id = update_data['team_id']
+                user.access = update_data['access']
                 
                 session.commit()
                 

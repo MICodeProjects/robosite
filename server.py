@@ -53,7 +53,12 @@ def init_database():
     os.makedirs('data', exist_ok=True)
     db_path = os.path.abspath(os.path.join('data', 'robosite.db'))
     db_url = f'sqlite:///{db_path}'
-     # Initialize all models with the same databaseAdd commentMore actions
+
+    # Create a single engine and create tables once
+    engine = create_engine(db_url, echo=False)
+    Base.metadata.create_all(engine)
+
+    # Initialize all models with the same engine
     user_model.initialize_DB(DB_name=db_url)
     team_model.initialize_DB(DB_name=db_url)
     unit_model.initialize_DB(DB_name=db_url)
@@ -61,20 +66,24 @@ def init_database():
     lesson_component_model.initialize_DB(DB_name=db_url)
     
     # Create default teams if they don't exist
-    default_teams = ["phoenixes", "pigeons", "teachers"]
-    team_ids = {}
-    for team_name in default_teams:
-        team_exists = team_model.exists(team=team_name)
-        if team_exists==False:
-            team_result = team_model.create(team_name)
-            if team_result["status"] == "success":
-                team_ids[team_name] = team_result["data"]["id"]
-                print(f"Team '{team_name}' created successfully!")
-            else:
-                print(f"Error creating team '{team_name}': {team_result['data']}")
-        else:
-            team_data = team_model.get_team(team=team_name)["data"]
-            team_ids[team_name] = team_data["id"]
+    # default_teams = ["phoenixes", "pigeons", "teachers"]
+    # team_ids = {}
+    # for team_name in default_teams:
+    #     team_exists = team_model.exists(team=team_name)
+    #     if team_exists==False:
+    #         team_result = team_model.create(team_name)
+    #         if team_result["status"] == "success":
+    #             team_ids[team_name] = team_result["data"]["id"]
+    #             print(f"Team '{team_name}' created successfully!")
+    #         else:
+    #             print(f"Error creating team '{team_name}': {team_result['data']}")
+    #     else:
+    #         team_result = team_model.get(team=team_name)
+    #         if team_result["status"] == "success":
+    #             team_ids[team_name] = team_result["data"]["id"]
+    #         else:
+    #             print(f"Error getting team '{team_name}': {team_result['data']}")
+    team_ids = {"phoenixes":1, "pigeons":2, "teachers":3}
             
     # Create admin user if not exists
     if not user_model.exists(email='admin@robotics.com')["data"]:

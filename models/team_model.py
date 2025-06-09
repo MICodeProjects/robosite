@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, Team, User
+from models import user_model
 
 class TeamModel:
     """
@@ -37,6 +38,7 @@ class TeamModel:
             print(f"Error initializing database: {str(e)}")
             raise
 
+        
     def exists(self, team: Optional[str] = None, id: Optional[int] = None) -> bool:
         """
         Check if a team exists by name or id
@@ -83,7 +85,7 @@ class TeamModel:
             return {"status": "error", "data": str(e)}
 
 
-    def get_team(self, team: str = None, id: int = None) -> Dict:
+    def get(self, team: str = None, id: int = None) -> Dict:
         """
         Get a team by name or id
         """
@@ -102,10 +104,11 @@ class TeamModel:
                 if not team_obj:
                     return {"status": "error", "data": "Team not found"}
 
+
                 return {"status": "success", "data": {
                     'name': team_obj.name,
                     'id': team_obj.id,
-                    'members': [user.email for user in team_obj.users]
+                    'members': [user_model.get(id=user.id)["data"] for user in team_obj.users]
                 }}
             finally:
                 session.close()
@@ -113,21 +116,32 @@ class TeamModel:
             return {"status": "error", "data": str(e)}
 
     def get_all_teams(self) -> Dict:
-        """
-        Get all teams
-        """
+        """Get all teams with full member information"""
         try:
             session = self.Session()
             try:
+                # Use joinedload to avoid N+1 query problem
                 teams = session.query(Team).options(joinedload(Team.users)).all()
                 
-                team_list = [{
-                    'name': team.name,
-                    'id': team.id,
-                    'members': [user.email for user in team.users]
-                } for team in teams]
+                # Proper serialization of team and user data
+                team_list = []
+                for team in teams:
+                    team_data = {
+                        'name': team.name,
+                        'id': team.id,
+                        'members': []
+                    }
+                    for user in team.users:
+                        team_data['members'].append({
+                            'email': user.email,
+                            'access': user.access,
+                            'team_id': user.team_id
+                        })
+                    team_list.append(team_data)
                 
                 return {"status": "success", "data": team_list}
+            except Exception as e:
+                return {"status": "error", "data": str(e)}
             finally:
                 session.close()
         except Exception as e:

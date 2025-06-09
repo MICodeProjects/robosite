@@ -24,7 +24,7 @@ class UserController:
             return redirect(url_for('teams.view'))
         
         email = request.form.get('email')
-        team = request.form.get('team')
+        team_id = request.form.get('team_id')
         access = request.form.get('access')
         
         if not email:
@@ -32,8 +32,8 @@ class UserController:
             return redirect(url_for('teams.view'))
         
         user_info = {'email': email}
-        if team:
-            user_info['team'] = team
+        if team_id:
+            user_info['team_id'] = int(team_id)
         if access:
             user_info['access'] = int(access)
         

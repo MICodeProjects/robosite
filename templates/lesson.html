@@ -90,7 +90,7 @@
                         <div class="prose max-w-none">
                             {{ current_lesson_component.content | safe }}
                         </div>
-                    {% elif current_clesson_omponent.type == 2 %}
+                    {% elif current_lesson_component.type == 2 %}
                         <!-- Video content -->
                         <div class="ratio ratio-16x9">
                             <iframe src="{{ current_lesson_component.content.url }}" allowfullscreen></iframe>

@@ -24,7 +24,7 @@ def test_user_update(auth_client, init_controllers):
     assert db_user['access'] == 3
     # You may need to map team name to team_id for this check
     team_model = init_controllers['team_controller'].team_model
-    pigeons_team = team_model.get_team(team='pigeons')['data']
+    pigeons_team = team_model.get(team='pigeons')['data']
     assert db_user['team_id'] == pigeons_team['id']
 
 def test_user_delete(auth_client, init_controllers):
