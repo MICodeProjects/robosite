@@ -3,29 +3,19 @@ from models.lesson_component_model import LessonComponentModel
 from models.user_model import UserModel
 from models.unit_model import UnitModel
 from models.lesson_model import LessonModel
+from controllers.base_controller import BaseController
 
 
-
-class LessonComponentController:    
+class LessonComponentController(BaseController):    
     def __init__(self, lesson_component_model: LessonComponentModel, user_model: UserModel, lesson_model: LessonModel, unit_model: UnitModel):
         self.lesson_component_model = lesson_component_model
         self.user_model = user_model
         self.unit_model = unit_model
         self.lesson_model = lesson_model
 
+
     
-    def get_current_user(self):
-        """Get the current user from the session."""
-        if 'user' in session and session['user'].get('email'):
-            return session['user']
-        if 'user_email' in session:
-            result = self.user_model.get(session['user_email'])
-            if result['status'] == 'success':
-                session['user'] = result['data']
-                return result['data']
-        return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
-    
-    def view(self, unit_id, lesson_id, lesson_component_id):
+    def view(self, user, unit_id, lesson_id, lesson_component_id):
         """Show a specific lesson component."""
         current_user = self.get_current_user()
         session['user'] = current_user
@@ -142,11 +132,13 @@ class LessonComponentController:
         
         lesson = self.lesson_model.get(id=lesson_id)['data']
         unit = self.unit_model.get(id=unit_id)['data']
+        user = self.get_current_user()
+
 
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
 
-            return redirect(url_for('lesson.view', lesson=lesson, unit=unit, unit_id=unit_id, lesson_id=lesson_id))
+            return redirect(url_for('lesson.view', user=user, lesson=lesson, unit=unit, unit_id=unit_id, lesson_id=lesson_id))
         
 
         

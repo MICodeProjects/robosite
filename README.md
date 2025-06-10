@@ -84,8 +84,6 @@ classDiagram
         "/" : index
         "/login" : login
         "/register" : register
-        "/profile" : profile
-        "/settings" : settings
         "/logout" : logout
         "/teams/*" : team routes
         "/users/*" : user routes
@@ -146,68 +144,94 @@ flowchart TD
 
 ### Controllers and Routes
 
-#### Session Controller
+#### SessionController
+- Methods:
+  - `index()`: Render home page with current user context
 - Routes:
-  - GET `/`: index
-  - GET `/login`: login
-  - POST `/login`: login
-  - GET `/register`: register
-  - POST `/register`: register
-  - GET `/profile`: profile
-  - GET `/settings`: settings
-  - GET `/logout`: logout
-
+  - GET `/`: Home page with dynamic content based on user access level
 - Access Control:
-  - All routes are publicly accessible.
+  - Public access (all levels)
+  - Shows different content based on user.access
 
-#### User Controller
+#### AuthController
+- Methods:
+  - `login()`: Initiates Google OAuth flow
+  - `callback()`: Handles OAuth callback and user creation
+  - `logout()`: Clears session
+  - `get_current_user()`: Returns authenticated user or default guest
 - Routes:
-  - POST `/users/update`: Update user information (Admin only)
-  - POST `/users/delete`: Delete user (Admin only)
+  - GET `/auth/google`: Start OAuth flow
+  - GET `/auth/google/callback`: Handle OAuth response
+  - GET `/logout`: Logout user
 
+#### UserController
+- Methods:
+  - `update()`: Update user info with OAuth data
+  - `delete()`: Remove user by Google ID
 - Access Control:
-  - Updating/deleting users requires admin access (level 3)
-  - User data is accessible to all authenticated users
+  - All methods require admin (level 3)
 
-#### Team Controller
-- Routes:
-  - GET `/teams`: View teams
-  - POST `/teams/create`: Create new team (Admin only)
-  - POST `/teams/update`: Update team (Admin only)
-
+#### TeamController
+- Methods:
+  - `view()`: Show teams and members
+  - `create()`: Create new team with name
+  - `update()`: Update team name
 - Access Control:
-  - Viewing teams requires member access (level 2)
-  - Team management requires admin access (level 3)
+  - View requires member (level 2)
+  - Create/Update require admin (level 3)
 
-#### Unit Controller
-- Routes:
-  - GET `/units`: View all units and lessons
-  - POST `/units/create`: Create new unit (Admin only)
-  - POST `/units/update`: Update unit (Admin only)
-  - POST `/units/delete`: Delete unit (Admin only)
+#### UnitController
+- Methods:
+  - `view()`: Show units and lessons
+  - `create()`: Create unit with name
+  - `update()`: Update unit name
+  - `delete()`: Remove unit and lessons
 - Access Control:
-  - Viewing units requires member access (level 2)
-  - Unit management requires admin access (level 3)
+  - View requires member (level 2)
+  - Create/Update/Delete require admin (level 3)
 
-#### Lesson Controller
-- Routes:
-  - GET `/lessons/<unit_id>/<lesson_id>`: View specific lesson
-  - POST `/lessons/create`: Create new lesson (Admin only)
-  - POST `/lessons/update`: Update lesson (Admin only)
-  - POST `/lessons/delete`: Delete lesson (Admin only)
+#### LessonController
+- Methods:
+  - `view(unit_id, lesson_id)`: Show lesson and components
+  - `create()`: Create lesson with name, type, img
+  - `update()`: Update lesson fields
+  - `delete()`: Remove lesson and components
 - Access Control:
-  - Viewing lessons requires member access (level 2)
-  - Lesson management requires admin access (level 3)
+  - View requires member (level 2)
+  - Create/Update/Delete require admin (level 3)
 
-#### Lesson Component Controller
-- Routes:
-  - GET `/lessons/<unit_id>/<lesson_id>/<lesson_component_id>`: View lesson component
-  - POST `/lesson_components/create`: Create lesson component (Admin only)
-  - POST `/lesson_components/update`: Update lesson component (Admin only)
-  - POST `/lesson_components/delete`: Delete lesson component (Admin only)
+#### LessonComponentController
+- Methods:
+  - `view(unit_id, lesson_id, component_id)`: Show component
+  - `create()`: Create component with content
+  - `update()`: Update component fields
+  - `delete()`: Remove component
 - Access Control:
-  - Viewing lesson components requires member access (level 2)
-  - Lesson Component management requires admin access (level 3)
+  - View requires member (level 2)
+  - Create/Update/Delete require admin (level 3)
+
+
+#### Server Configuration
+```python
+# OAuth setup
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+
+# Required env vars
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI')
+
+# Routes
+@app.route('/auth/google')
+def login():
+    return auth_controller.login()
+
+@app.route('/auth/google/callback') 
+def callback():
+    return auth_controller.callback()
+```
 
 ## Data Models
 
@@ -323,14 +347,14 @@ classDiagram
 
 #### UserModel
 - `initialize_DB(DB_name: str) -> None`: Initialize SQLite database connection
-- `exists(email: str) -> bool`: Check if user exists
-- `create(user_info: Dict) -> Dict[status, data]`: Create new user with validation
-  - Required fields: email
-  - Optional fields: team (default=2), access (default=1)
-- `get(email: str) -> Dict[status, data]`: Retrieve user by email
+- `exists(email: str=None, google_id: str=None) -> bool`: Check if user exists
+- `get(email: str=None, google_id: str=None) -> Dict[status, data]`: Retrieve user by email or google_id
 - `get_all() -> Dict[status, List[user]]`: List all users
 - `update(user_info: Dict) -> Dict[status, data]`: Update user information
-- `remove(email: str) -> Dict[status, data]`: Delete user
+- `remove(google_id: str) -> Dict[status, data]`: Delete user
+- `create(user_info: Dict) -> Dict`: Create or update user from Google OAuth data
+  - Required fields: google_id, name, email
+  - Optional: team_id (default=2), access (default=2)
 
 #### TeamModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
@@ -458,7 +482,19 @@ pip install -r requirements.txt
 python -c "from models.database import Base; from sqlalchemy import create_engine; engine = create_engine('sqlite:///data/robosite.db'); Base.metadata.create_all(engine)"
 ```
 
-3. Set up and verify test environment:
+3. Enable OAuth for local development:
+```bash
+# For Windows CMD
+set OAUTHLIB_INSECURE_TRANSPORT=1
+
+# For PowerShell
+$env:OAUTHLIB_INSECURE_TRANSPORT = "1"
+
+# For Linux/Mac
+export OAUTHLIB_INSECURE_TRANSPORT=1
+```
+
+4. Set up and verify test environment:
 ```bash
 # Show test collection and setup
 python -m pytest tests/ --setup-show
@@ -501,4 +537,94 @@ python -m pytest -v tests/
 ```
 
 Note: The tests are organized into model_tests/ and controller_tests/ directories for better organization. All tests automatically handle test database setup and cleanup. Each test runs with a fresh SQLite test database that is removed after completion.
+
+## Authentication
+
+### Google OAuth Integration
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Flask App
+    participant G as Google OAuth
+    participant DB as Database
+
+    U->>F: Click "Sign in with Google"
+    F->>G: Redirect to Google OAuth
+    G->>U: Show Google login page
+    U->>G: Login with Google account
+    G->>F: Return with auth code
+    F->>G: Exchange code for tokens
+    G->>F: Return user info
+    F->>DB: Create/Update user
+    F->>U: Redirect to index page
+```
+
+### OAuth Configuration
+Required environment variables:
+```
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/auth/google/callback
+
+# For local development only, to allow OAuth over HTTP instead of HTTPS
+OAUTHLIB_INSECURE_TRANSPORT=1
+```
+
+> **Note for Development**: Google OAuth typically requires HTTPS, but for local development on localhost, 
+> setting the `OAUTHLIB_INSECURE_TRANSPORT` environment variable to `1` allows using HTTP. This is already
+> configured in the server.py file, but can also be set manually as shown above.
+
+### AuthController Methods
+- `login()`: Initiates Google OAuth flow
+- `callback()`: Handles OAuth callback and user creation
+- `logout()`: Clears session and logs out user
+- `get_current_user()`: Returns current authenticated user
+
+### Current Routes
+
+```python
+# Public Routes
+@app.route('/')                     # Home page
+@app.route('/auth/google')          # Start Google OAuth flow
+@app.route('/auth/google/callback') # Handle OAuth callback
+@app.route('/logout')               # Logout user
+
+# Team Routes (Member+ Access)
+GET '/teams'              # View teams
+POST '/teams/create'      # Create new team (Admin)
+POST '/teams/update'      # Update team (Admin)
+
+# User Routes (Admin Only)
+POST '/users/update'      # Update user information
+POST '/users/delete'      # Delete user
+
+# Unit Routes (Member+ Access)
+GET '/units'             # View all units
+POST '/units/create'     # Create new unit (Admin)
+POST '/units/update'     # Update unit (Admin)
+POST '/units/delete'     # Delete unit (Admin)
+
+# Lesson Routes (Member+ Access)
+GET '/lessons/<unit_id>/<lesson_id>'  # View lesson
+POST '/lessons/create'                # Create lesson (Admin)
+POST '/lessons/update'                # Update lesson (Admin)
+POST '/lessons/delete'                # Delete lesson (Admin)
+
+# Lesson Component Routes (Member+ Access)
+GET '/lessons/<unit_id>/<lesson_id>/<lesson_component_id>'  # View component
+POST '/lesson_components/create'                            # Create component (Admin)
+POST '/lesson_components/update'                            # Update component (Admin)
+POST '/lesson_components/delete'                            # Delete component (Admin)
+```
+
+#### Access Control Rules
+- Public Routes: No authentication required
+- Member Routes: Requires access level >= 2
+- Admin Routes: Requires access level = 3
+
+#### Middleware Protection
+All routes except public routes are protected by the `check_access` middleware which:
+1. Validates user authentication
+2. Checks required access level
+3. Redirects unauthorized access to index with error message
 

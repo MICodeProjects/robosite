@@ -3,29 +3,20 @@ from models.lesson_model import LessonModel
 from models.lesson_component_model import LessonComponentModel
 from models.user_model import UserModel
 from models.unit_model import UnitModel
+from controllers.base_controller import BaseController
 
-class LessonController:
+
+class LessonController(BaseController):
     def __init__(self, lesson_model: LessonModel, lesson_component_model: LessonComponentModel, user_model: UserModel, unit_model: UnitModel):
         self.lesson_model = lesson_model
         self.lesson_component_model = lesson_component_model
         self.user_model = user_model
         self.unit_model = unit_model
     
-    def get_current_user(self):
-        """Get the current user from the session."""
-        if 'user' in session and session['user'].get('email'):
-            return session['user']
-        if 'user_email' in session:
-            result = self.user_model.get(session['user_email'])
-            if result['status'] == 'success':
-                session['user'] = result['data']
-                return result['data']
-        return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
     
     def view(self, unit_id, lesson_id):
         """Show a specific lesson and its lesson_components."""
         current_user = self.get_current_user()
-        session['user'] = current_user
         
         # Get the lesson
         lesson_result = self.lesson_model.get(id=lesson_id)

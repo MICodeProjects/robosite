@@ -16,5 +16,26 @@ def clean_database():
     
     print("Database cleaned successfully. Run server.py to initialize a fresh database.")
 
+def list_secrets(project_id: str) -> None:
+    """
+    List all secrets in the given project.
+    """
+
+    # Import the Secret Manager client library.
+    from google.cloud import secretmanager
+
+    # Create the Secret Manager client.
+    client = secretmanager.SecretManagerServiceClient()
+
+    # Build the resource name of the parent project.
+    parent = f"projects/{project_id}"
+
+    # List all secrets.
+    for secret in client.list_secrets(request={"parent": parent}):
+        print(f"Found secret: {secret.name}")
+
 if __name__ == "__main__":
-    clean_database()
+    # clean_database()
+    list_secrets("robosite-462417")
+
+

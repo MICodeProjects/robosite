@@ -1,22 +1,11 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, User, Team
 
 class UserModel:
-    """
-    User Model class for managing user data in the Robosite application.
-    
-    This class handles CRUD operations for User entities stored in SQLite database.
-    Each User has email, team, and access level attributes.
-    
-    Access levels:
-    - 1: Guest (cannot submit assignments or edit)
-    - 2: Member (can submit assignments and are on a team, but cannot edit)
-    - 3: Captain/Teacher (can edit assignments and assign assignments)
-    """
-    
+    """User Model for database operations"""
     def __init__(self):
         """Initialize the User Model with the database file path."""
         self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,6 +33,27 @@ class UserModel:
         except Exception as e:
             print(f"Error initializing database: {str(e)}")
             raise
+
+    def remove(self, google_id: str) -> Dict:
+        """Delete user by google_id"""
+        try:
+            session = self.Session()
+            user = session.query(User).filter_by(google_id=google_id).first()
+            if not user:
+                return {"status": "error", "data": "User not found"}
+            
+            session.delete(user)
+            session.commit()
+            return {"status": "success", "data": "User deleted successfully"}
+        except Exception as e:
+            session.rollback()
+            return {"status": "error", "data": str(e)}
+        finally:
+            session.close()
+
+
+
+
         
             
     def get_all(self) -> Dict:
@@ -75,7 +85,8 @@ class UserModel:
         
         Args:
             user_info: Dictionary containing:
-                email: User's email address (required)
+                google_id: User's Google ID (required)
+                name: User's full name (optional)
                 team_id: New team ID (optional)
                 access: New access level (optional)
                 
@@ -84,76 +95,41 @@ class UserModel:
                 status: "success" or "error"
                 data: Updated user data dict or error message
         """
-        try:
-            # Validate required fields
-            if 'email' not in user_info:
-                return {"status": "error", "data": "Email is required"}
-            
-            # Get current user data
-            current_user = self.get(user_info['email'])
-            if current_user["status"] == "error":
-                return current_user
-            
-            # Merge current data with new data
-            update_data = {
-                'email': user_info['email'],
-                'team_id': user_info.get('team_id', current_user["data"]["team_id"]),
-                'access': user_info.get('access', current_user["data"]["access"])
-            }
-            
-            # Validate access level
-            if update_data['access'] not in [1, 2, 3]:
-                return {"status": "error", "data": "Access must be one of: 1 (Guest), 2 (Member), 3 (Captain/Teacher)"}
-            
-            session = self.Session()
-            try:
-                user = session.query(User).filter_by(email=user_info['email']).first()
-                if not user:
-                    return {"status": "error", "data": f"User with email {update_data['email']} not found"}
-                
-                # Update all fields with merged data
-                user.team_id = update_data['team_id']
-                user.access = update_data['access']
-                
-                session.commit()
-                
-                return {"status": "success", "data": {
-                    "email": user.email,
-                    "team_id": user.team_id,
-                    "access": user.access
-                }}
-            except Exception as e:
-                session.rollback()
-                return {"status": "error", "data": str(e)}
-            finally:
-                session.close()
-        except Exception as e:
-            return {"status": "error", "data": str(e)}
-    
-    def remove(self, email: str) -> Dict:
-        """Remove a user from the database by email.
-        
-        Args:
-            email: The email of the user to remove
-            
-        Returns:
-            Dict with keys:
-                status: "success" or "error"
-                data: Success message or error message
-        """
         session = self.Session()
         try:
-            user = session.query(User).filter_by(email=email).first()
-            if user:
-                session.delete(user)
-                session.commit()
-                return {"status": "success", "data": "User removed successfully"}
-            return {"status": "error", "data": f"User with email {email} not found"}
+            # Verify required field
+            if 'google_id' not in user_info:
+                return {"status": "error", "data": "Google ID is required"}
+            
+            # Get existing user
+            user = session.query(User).filter_by(google_id=user_info['google_id']).first()
+            if not user:
+                return {"status": "error", "data": "User not found"}
+            
+            # Update fields if provided
+            if 'name' in user_info:
+                user.name = user_info['name']
+            if 'team_id' in user_info:
+                user.team_id = user_info['team_id']
+            if 'access' in user_info:
+                user.access = user_info['access']
+                
+            session.commit()
+            
+            # Return updated user data
+            return {"status": "success", "data": {
+                "google_id": user.google_id,
+                "name": user.name,
+                "access": user.access,
+                "team_id": user.team_id
+            }}
+            
         except Exception as e:
             session.rollback()
             return {"status": "error", "data": str(e)}
         finally:
             session.close()
+
     
     def exists(self, email: str=None, google_id: str=None) -> bool:
         """Check if a user exists by Google ID.
@@ -197,7 +173,6 @@ class UserModel:
                 google_id: User's Google ID
                 name: User's full name
                 email: User's email address
-                profile_picture: URL of the user's profile picture (optional)
                 access: Access level (optional, defaults to 1)
                 team_id: ID of the team (optional)
                 
@@ -209,10 +184,10 @@ class UserModel:
         try:
             if 'google_id' not in user_info or 'email' not in user_info:
                 return {"status": "error", "data": "Google ID and email are required"}
-            
-            # Check if user already exists
-            if self.exists_by_google_id(user_info['google_id']):
-                return {"status": "error", "data": "User with this Google ID already exists"}
+              # Check if user already exists
+            if self.exists(google_id=user_info['google_id']):
+                # User exists, update instead
+                return self.update(user_info)
             
             # Default access level to 1 if not provided
             access = user_info.get('access', 1)
@@ -224,7 +199,6 @@ class UserModel:
                     google_id=user_info['google_id'],
                     name=user_info['name'],
                     email=user_info['email'],
-                    profile_picture=user_info.get('profile_picture'),
                     access=access,
                     team_id=user_info.get('team_id')
                 )
@@ -235,7 +209,6 @@ class UserModel:
                     "google_id": new_user.google_id,
                     "name": new_user.name,
                     "email": new_user.email,
-                    "profile_picture": new_user.profile_picture,
                     "access": new_user.access,
                     "team_id": new_user.team_id
                 }}
@@ -267,7 +240,6 @@ class UserModel:
                         "google_id": user.google_id,
                         "name": user.name,
                         "email": user.email,
-                        "profile_picture": user.profile_picture,
                         "access": user.access,
                         "team_id": user.team_id
                     }}

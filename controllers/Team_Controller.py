@@ -1,8 +1,10 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from models.team_model import TeamModel
 from models.user_model import UserModel
+from controllers.base_controller import BaseController
 
-class TeamController:
+
+class TeamController(BaseController):
     def __init__(self, team_model: TeamModel, user_model: UserModel):
         self.team_model = team_model
         self.user_model = user_model
@@ -11,8 +13,6 @@ class TeamController:
         """Render the teams page."""
         # Get current user from user controller
         current_user = self.get_current_user()
-        # Put user in session for template to access
-        session['user'] = current_user
         
         # Get all teams
         result = self.team_model.get_all_teams()
@@ -24,7 +24,7 @@ class TeamController:
         
         return render_template('team.html', teams=teams, users=users, user=current_user)
     
-    def create_team(self):
+    def create(self):
         """Create a new team."""
         # Check user has required access level
         if self.get_current_user()['access'] < 3:
@@ -44,7 +44,7 @@ class TeamController:
         
         return redirect(url_for('teams.view'))
     
-    def update_team(self):
+    def update(self):
         """Update a team's information."""
         # Check user has required access level
         if self.get_current_user()['access'] < 3:
@@ -66,14 +66,3 @@ class TeamController:
         
         return redirect(url_for('teams.view'))
     
-    
-    def get_current_user(self):
-        """Get the current user from the session."""
-        if 'user' in session and session['user'].get('email'):
-            return session['user']
-        if 'user_email' in session:
-            result = self.user_model.get(session['user_email'])
-            if result['status'] == 'success':
-                session['user'] = result['data']
-                return result['data']
-        return {'email': None, 'team': 'none', 'access': 1}  # Default guest user

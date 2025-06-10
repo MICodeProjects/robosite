@@ -4,6 +4,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models.database import Base
+from config.keys import Keys
+
+# Set environment variable to allow OAuth over HTTP for localhost development
+# This is ONLY for development purposes - production should always use HTTPS
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Import models
 from models.user_model import UserModel
@@ -18,11 +23,18 @@ from controllers.Team_Controller import TeamController
 from controllers.unit_Controller import UnitController
 from controllers.lesson_Controller import LessonController
 from controllers.lesson_component_Controller import LessonComponentController
-from controllers.session_Controller import SessionController
+from controllers.auth_controller import AuthController
+
+from controllers.session_controller import SessionController
+
+# Add missing OAuth dependencies to requirements
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 app = Flask(__name__)
-app.secret_key = "your-very-secret-key"
-app.permanent_session_lifetime = timedelta(days=30)  # Set session to last 30 days
+app.secret_key = Keys.SECRET_KEY
+app.permanent_session_lifetime = timedelta(days=7)
 
 # Set up static folder
 app.static_folder = 'static'
@@ -40,11 +52,12 @@ lesson_component_model = LessonComponentModel()
 
 # Initialize controller instances
 user_controller = UserController(user_model)
+auth_controller = AuthController(user_model)
 team_controller = TeamController(team_model, user_model)
 unit_controller = UnitController(unit_model, lesson_model, user_model)
 lesson_controller = LessonController(lesson_model, lesson_component_model, user_model, unit_model)
 lesson_component_controller = LessonComponentController(lesson_component_model, user_model, lesson_model, unit_model)
-session_controller = SessionController(user_model, team_model)
+session_controller = SessionController(user_model)
 
 # Make sessions permanent and set session lifetime
 app.permanent_session_lifetime = timedelta(days=7)  # or however long you want
@@ -85,17 +98,22 @@ def init_database():
     #         else:
     #             print(f"Error getting team '{team_name}': {team_result['data']}")
     team_ids = {"phoenixes":1, "pigeons":2, "teachers":3}
-            
-    # Create admin user if not exists
-    if not user_model.exists(email='admin@robotics.com')["data"]:
-        # Ensure team ID 1 exists
-        admin_team_id = team_ids.get("phoenixes", 1)  # Default to 1 if "phoenixes" doesn't exist
-        user_model.create({
-            'email': 'admin@robotics.com',
-            'access': 3,
-            'team_id': admin_team_id
-        })
-        print("Admin user created successfully!")
+    for team_name in team_ids.keys():
+        team_result = team_model.create(team_name)
+        if team_result["status"] == "success":
+            team_ids[team_name] = team_result["data"]["id"]
+            print(f"Team '{team_name}' created successfully!")
+        else:
+            print(f"Error creating team '{team_name}': {team_result['data']}")
+              # Create admin user if not exists
+    admin_info = {
+        'google_id': '111675821664854451432', # IMPORTANT: Replace with YOUR actual Google ID shown in flash message after login
+        'name': 'Maya Admin',
+        'email': 'maya23inal@gmail.com',
+        'team_id': 3,  # teachers team
+        'access': 3    # admin access
+    }
+    user_model.create(admin_info)
     
     print(f"Database initialized successfully at {db_path}")
     
@@ -105,57 +123,57 @@ def inject_year():
     """Inject the current year into all templates."""
     return {'year': datetime.now().year}
 
+# inject current user from auth into all templates
+@app.context_processor
+def inject_user():
+    """Make current user available to all templates."""
+    return {'user': auth_controller.get_current_user()}
+
+
 
 
 # Route Handlers
 @app.route('/')
 def index():
-    """Home page."""
+    """Home page"""
     return session_controller.index()
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/auth/google')
 def login():
-    """Login page."""
-    return session_controller.login()
+    """Start Google OAuth flow"""
+    return auth_controller.login()
 
-@app.route('/callback')
+@app.route('/auth/google/callback')
 def callback():
-    return session_controller.callback()
-
-@app.route('/profile')
-def profile():
-    """Profile page."""
-    return session_controller.profile()
-
-@app.route('/settings')
-def settings():
-    """Settings page."""
-    return session_controller.settings()
+    """Handle Google OAuth callback"""
+    return auth_controller.callback()
 
 @app.route('/logout')
 def logout():
-    """Logout page."""
-    return session_controller.logout()
+    """Logout"""
+    return auth_controller.logout()
 
-# If you want 'teams_manage' or 'statistics', define them:
-# @app.route('/teams/manage')
-# def teams_manage():
-#     ...
+@app.route('/profile')
+def profile():
+    """Logout"""
+    return render_template("profile.html")
 
-# @app.route('/statistics')
-# def statistics():
-#     ...
+
+@app.route('/settings')
+def settings():
+    """Logout"""
+    return render_template("settings.html")
 
 # Routes using add_url_rule for cleaner organization
 
 # Team routes
 app.add_url_rule('/teams', 'teams.view', view_func=team_controller.view)
-app.add_url_rule('/teams/create', 'teams.create', view_func=team_controller.create_team, methods=['POST'])
-app.add_url_rule('/teams/update', 'teams.update', view_func=team_controller.update_team, methods=['POST'])
+app.add_url_rule('/teams/create', 'teams.create', view_func=team_controller.create, methods=['POST'])
+app.add_url_rule('/teams/update', 'teams.update', view_func=team_controller.update, methods=['POST'])
 
 # User routes
-app.add_url_rule('/users/update', 'users.update', view_func=user_controller.update_user, methods=['POST'])
-app.add_url_rule('/users/delete', 'users.delete', view_func=user_controller.delete_user, methods=['POST'])
+app.add_url_rule('/users/update', 'users.update', view_func=user_controller.update, methods=['POST'])
+app.add_url_rule('/users/delete', 'users.delete', view_func=user_controller.delete, methods=['POST'])
 
 # Unit routes
 app.add_url_rule('/units', 'units.view', view_func=unit_controller.view)
@@ -180,21 +198,21 @@ app.add_url_rule('/lesson_components/delete', 'lesson_components.delete', view_f
 # Access Control Middleware
 @app.before_request
 def check_access():
-    """Check if user has required access level for protected routes."""
-    current_user = user_controller.get_current_user()
+    """Check if user has required access level for protected routes"""
+    user = auth_controller.get_current_user()
     
-    # Public routes - allow all access levels
-    public_routes = ['index', 'login', 'callback']
+    # Public routes
+    public_routes = ['index', 'google_login', 'callback']
     if request.endpoint in public_routes:
         return None
-        
-    # Routes requiring access level 2 or higher
-    member_routes = ['units.view', 'teams.view', 'lessons.view', 'lesson_components.view', 'todo.view']
-    if request.endpoint in member_routes and current_user['access'] < 2:
-        flash('You must be a team member to access this page', 'error')
+    
+    # Member routes (level 2+)
+    member_routes = ['units.view', 'teams.view', 'lessons.view', 'lesson_components.view']
+    if request.endpoint in member_routes and user['access'] < 2:
+        flash('You must be a team member to access this page')
         return redirect(url_for('index'))
-        
-    # Routes requiring access level 3
+    
+    # Admin routes (level 3)
     admin_routes = [
         'teams.create', 'teams.update', 
         'users.update', 'users.delete',
@@ -202,7 +220,7 @@ def check_access():
         'lessons.create', 'lessons.update', 'lessons.delete',
         'lesson_components.create', 'lesson_components.update', 'lesson_components.delete'
     ]
-    if request.endpoint in admin_routes and current_user['access'] < 3:
+    if request.endpoint in admin_routes and user['access'] < 3:
         flash('You must be a team captain or teacher to perform this action', 'error')
         return redirect(url_for('index'))
     

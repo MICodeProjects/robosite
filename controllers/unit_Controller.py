@@ -2,22 +2,16 @@ from flask import render_template, request, redirect, url_for, session, flash
 from models.unit_model import UnitModel
 from models.user_model import UserModel
 from models.lesson_model import LessonModel
+from controllers.base_controller import BaseController
 
-class UnitController:
+
+class UnitController(BaseController):
     def __init__(self, unit_model: UnitModel, lesson_model: LessonModel, user_model: UserModel):
         self.unit_model = unit_model
         self.lesson_model = lesson_model
-    
-    def get_current_user(self):
-        """Get the current user from the session."""
-        if 'user' in session and session['user'].get('email'):
-            return session['user']
-        if 'user_email' in session:
-            result = self.user_model.get(session['user_email'])
-            if result['status'] == 'success':
-                session['user'] = result['data']
-                return result['data']
-        return {'email': None, 'team': 'none', 'access': 1}  # Default guest user
+        self.user_model = user_model
+
+   
     
     def view(self):
         """Show all units and their lessons."""

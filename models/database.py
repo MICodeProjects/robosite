@@ -8,10 +8,9 @@ class User(Base):
     __tablename__ = 'users'
     google_id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
-    email = Column(String, nullable=False)
-    profile_picture = Column(String)
+    email = Column(String, nullable=False, unique=True)
+    access = Column(Integer, default=2)  # 1=guest, 2=member, 3=admin
     team_id = Column(Integer, ForeignKey('teams.id'))
-    access = Column(Integer)
     team = relationship("Team", back_populates="users")
 
 class Team(Base):
