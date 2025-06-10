@@ -45,10 +45,10 @@ class LessonModel:
             print(f"Error initializing database: {str(e)}")
             raise
 
-    def exists(self, lesson: Optional[str] = None, id: Optional[int] = None) -> bool:
+    def exists(self, lesson: Optional[str] = None, id: Optional[int] = None) -> Dict:
         """Check if a lesson exists by name or id"""
         if lesson is None and id is None:
-            return False
+            return {"status": "error", "data": "No lesson name or id input"}
             
         session = self.Session()
         try:
@@ -57,7 +57,7 @@ class LessonModel:
                 query = query.filter(Lesson.name == lesson)
             if id:
                 query = query.filter(Lesson.id == id)
-            return session.query(query.exists()).scalar()
+            return {"status": "success", "data": session.query(query.exists()).scalar()}
         finally:
             session.close()
 
@@ -66,8 +66,8 @@ class LessonModel:
         try:
             if 'name' not in lesson_info:
                 return {"status": "error", "data": "Lesson name is required"}
-                
-            if self.exists(lesson=lesson_info['name']):
+            exists_result = self.exists(lesson=lesson_info['name'])
+            if exists_result["status"] == "success" and exists_result["data"]:
                 return {"status": "error", "data": f"Lesson {lesson_info['name']} already exists"}
                 
             session = self.Session()
@@ -185,12 +185,13 @@ class LessonModel:
             return {"status": "error", "data": str(e)}
             
     def update(self, lesson_info: Dict) -> Dict:
-        """Update a lesson"""
+        """Update a lesson"""        
         try:
             if 'id' not in lesson_info:
                 return {"status": "error", "data": "Lesson ID is required"}
                 
-            if not self.exists(id=lesson_info['id']):
+            exists_result = self.exists(id=lesson_info['id'])
+            if exists_result["status"] == "success" and not exists_result["data"]:
                 return {"status": "error", "data": f"Lesson with id {lesson_info['id']} not found"}
                 
             session = self.Session()

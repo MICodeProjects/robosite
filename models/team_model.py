@@ -3,17 +3,18 @@ from typing import Dict, List, Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, joinedload
 from .database import Base, Team, User
-from models import user_model
+from models.user_model import UserModel
 
 class TeamModel:
     """
     Team Model - Handles all interactions with the team database using SQLAlchemy
     """
     
-    def __init__(self):
+    def __init__(self, user_model:UserModel):
         """Initialize the Team Model."""
         self.engine = None
         self.Session = None
+        self.user_model = UserModel()
 
     def initialize_DB(self, DB_name: str) -> None:
         """Initialize SQLite database and ensure tables exist.
@@ -39,12 +40,12 @@ class TeamModel:
             raise
 
         
-    def exists(self, team: Optional[str] = None, id: Optional[int] = None) -> bool:
+    def exists(self, team: Optional[str] = None, id: Optional[int] = None) -> Dict:
         """
         Check if a team exists by name or id
         """
         if team is None and id is None:
-            return False
+            return {"status": "error", "data": "No team name or id input"}
 
         session = self.Session()
         try:
@@ -53,7 +54,7 @@ class TeamModel:
                 team_exists = query.filter_by(name=team).first() is not None
             else:
                 team_exists = query.filter_by(id=id).first() is not None
-            return team_exists
+            return {"status": "success", "data": team_exists}
         finally:
             session.close()
 
@@ -62,7 +63,8 @@ class TeamModel:
         Create a new team
         """
         try:
-            if self.exists(team=team_name):
+            exists_result = self.exists(team=team_name)
+            if exists_result["status"] == "success" and exists_result["data"]:
                 return {"status": "error", "data": f"Team {team_name} already exists"}
 
             session = self.Session()
@@ -107,8 +109,8 @@ class TeamModel:
 
                 return {"status": "success", "data": {
                     'name': team_obj.name,
-                    'id': team_obj.id,
-                    'members': [user_model.get(id=user.id)["data"] for user in team_obj.users]
+                    'id': team_obj.id
+                    # 'members': [self.user_model.get(email=user.email)["data"] for user in team_obj.users]
                 }}
             finally:
                 session.close()

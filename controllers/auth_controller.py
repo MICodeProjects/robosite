@@ -4,12 +4,15 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from config.keys import Keys
 from models.user_model import UserModel
+from models.team_model import TeamModel
+
 from controllers.base_controller import BaseController
 
 
 class AuthController(BaseController):
-    def __init__(self, user_model: UserModel):
+    def __init__(self, user_model: UserModel, team_model:TeamModel):
         self.user_model = user_model
+        self.team_model = team_model
         # Use configuration from Keys instead of client_secrets.json file
         self.flow = Flow.from_client_config(
             {
@@ -38,22 +41,43 @@ class AuthController(BaseController):
             credentials = self.flow.credentials
             service = build('oauth2', 'v2', credentials=credentials)
             user_info = service.userinfo().get().execute()
+
+            print("new user info: ", user_info)
             
             # Display Google ID for debugging (temporary)
             from flask import flash
-            flash(f"Your Google ID is: {user_info['id']}", 'info')
+            flash(f"Welcome to Robosite, {user_info['name']}", 'info')
             
+            # does user exist? if so, get team_id
+            exists_result=self.user_model.exists(email=user_info['email'])
+            print("exists_result: ", exists_result)
+            if exists_result["status"] == "success" and exists_result["data"]==True:
+                team_id_result=self.user_model.get(email=user_info['email'])
+                print("team_idresult = ", team_id_result)
+                team_id=team_id_result["data"]["team_id"]
+                access=team_id_result["data"]["access"]
+
+            # default to pigeons team if no team id
+            else:
+                team_id=2 
+                access=2
+
             # Create/update user in database
             user_data = {
                 'google_id': user_info['id'],
                 'name': user_info['name'],
                 'email': user_info['email'],
-                'access': 2  # Default to member access
+                'team_id':team_id,
+                'access': access  # Default to member access
             }
-            
             result = self.user_model.create(user_data)
             if result['status'] == 'success':
                 session['user'] = result['data']
+                # adding team_name to session['user']
+                session['user']['team_name']=self.team_model.get(id=team_id)['data']['name']
+                
+
+                
                 return redirect(url_for('index'))
             else:
                 return redirect(url_for('index', error="Login failed"))

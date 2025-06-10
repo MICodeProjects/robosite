@@ -120,6 +120,7 @@ class UserModel:
             return {"status": "success", "data": {
                 "google_id": user.google_id,
                 "name": user.name,
+                "email":user.email,
                 "access": user.access,
                 "team_id": user.team_id
             }}
@@ -131,7 +132,7 @@ class UserModel:
             session.close()
 
     
-    def exists(self, email: str=None, google_id: str=None) -> bool:
+    def exists(self, email: str=None, google_id: str=None) -> Dict:
         """Check if a user exists by Google ID.
         
         Args:
@@ -143,14 +144,13 @@ class UserModel:
         if google_id:
             session = self.Session()
             try:
-                return session.query(User).filter_by(google_id=google_id).first() is not None
+                exists = session.query(User).filter_by(email=email).first() is not None
+                return {"status":"success", "data":exists}
             except Exception as e:
-                return False
+                return {"status":"error", "data":str(e)}
             finally:
                 session.close()
         elif email:
-            if not email:
-                return {"status": "error", "data": "Email or google id is required"}
             
             try:
                 session = self.Session()
@@ -163,6 +163,8 @@ class UserModel:
                 return {"status": "error", "data": str(e)}
             finally:
                 session.close()
+        else:
+            return {"status": "error", "data": "Email or google id is required"}
 
 
     def create(self, user_info: Dict) -> Dict:
@@ -181,11 +183,15 @@ class UserModel:
                 status: "success" or "error"
                 data: User data dict or error message
         """
-        try:
+        try:            
             if 'google_id' not in user_info or 'email' not in user_info:
                 return {"status": "error", "data": "Google ID and email are required"}
               # Check if user already exists
-            if self.exists(google_id=user_info['google_id']):
+            exists_by_id = self.exists(google_id=user_info['google_id'])
+            exists_by_email = self.exists(email=user_info["email"])
+            
+            if ((exists_by_id["status"] == "success" and exists_by_id["data"]) or 
+                (exists_by_email["status"] == "success" and exists_by_email["data"])):
                 # User exists, update instead
                 return self.update(user_info)
             
@@ -243,22 +249,26 @@ class UserModel:
                         "access": user.access,
                         "team_id": user.team_id
                     }}
+                
                 return {"status": "error", "data": "User not found"}
             except Exception as e:
                 return {"status": "error", "data": str(e)}
             finally:
                 session.close()
+
         elif email !=None:
             session = self.Session()
             try:
                 user = session.query(User).filter_by(email=email).first()
                 if user:
                     return {"status": "success", "data": {
+                        "google_id": user.google_id,
+                        "name": user.name,
                         "email": user.email,
-                        "team_id": user.team_id,
-                        "access": user.access
+                        "access": user.access,
+                        "team_id": user.team_id
                     }}
-                return {"status": "error", "data": f"User with email {email} not found"}
+                return {"status": "error", "data": f"User not found"}
             except Exception as e:
                 return {"status": "error", "data": str(e)}
             finally:

@@ -11,7 +11,7 @@
 
     {% if user and user.access >= 2 %}
     <div class="team-info-card mb-4">
-        <h3>Your Team: {{ user.team|capitalize }}</h3>
+        <h3>Your Team: {{ user_team_name|capitalize }}</h3>
         {% if user.access == 3 %}
         <div class="badge bg-primary">Captain</div>
         {% else %}
@@ -73,7 +73,7 @@
                             <select name="email" class="form-select" required>
                                 <option value="">Select User</option>
                                 {% for user in users %}
-                                <option value="{{ user.email }}">{{ user.email }}</option>
+                                    <option value="{{ user.email }}">{{ user.email }}</option>
                                 {% endfor %}
                             </select>
                             <input type="hidden" name="team_id" value="{{ team.id }}">

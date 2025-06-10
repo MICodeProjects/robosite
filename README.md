@@ -347,7 +347,7 @@ classDiagram
 
 #### UserModel
 - `initialize_DB(DB_name: str) -> None`: Initialize SQLite database connection
-- `exists(email: str=None, google_id: str=None) -> bool`: Check if user exists
+- `exists(email: str=None, google_id: str=None) -> Dict[status, data]`: Check if user exists
 - `get(email: str=None, google_id: str=None) -> Dict[status, data]`: Retrieve user by email or google_id
 - `get_all() -> Dict[status, List[user]]`: List all users
 - `update(user_info: Dict) -> Dict[status, data]`: Update user information
@@ -358,14 +358,14 @@ classDiagram
 
 #### TeamModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(team: Optional[str], id: Optional[int]) -> bool`: Check team existence
+- `exists(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check team existence
 - `create(team_name: str) -> Dict[status, data]`: Create new team
 - `get(team: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get team by name or ID
 - `get_all_teams() -> Dict[status, List[team]]`: List all teams
 
 #### UnitModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(unit: Optional[str], id: Optional[int]) -> bool`: Check unit existence
+- `exists(unit: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check unit existence
 - `create(unit_name: str) -> Dict[status, data]`: Create new unit
 - `get(unit: Optional[str], id: Optional[int]) -> Dict[status, data]`: Get unit by name or ID
 - `get_all() -> Dict[status, List[unit]]`: List all units
@@ -374,7 +374,7 @@ classDiagram
 
 #### LessonModel
 - `initialize_DB(DB_name: str) -> None`: Initialize database connection
-- `exists(lesson: Optional[str], id: Optional[int]) -> bool`: Check lesson existence
+- `exists(lesson: Optional[str], id: Optional[int]) -> Dict[status, data]`: Check lesson existence
 - `create(lesson_info: Dict) -> Dict[status, data]`: Create new lesson
   - Required fields: name, unit_id
   - Optional fields: type, img

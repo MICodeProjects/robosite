@@ -35,7 +35,7 @@ def list_secrets(project_id: str) -> None:
         print(f"Found secret: {secret.name}")
 
 if __name__ == "__main__":
-    # clean_database()
-    list_secrets("robosite-462417")
+    clean_database()
+    #list_secrets("robosite-462417")
 
 

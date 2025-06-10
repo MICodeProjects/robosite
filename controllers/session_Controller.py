@@ -12,5 +12,4 @@ class SessionController(BaseController):
         
 
     def index(self):
-        user = self.get_current_user()
         return render_template('index.html')

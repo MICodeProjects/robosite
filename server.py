@@ -45,14 +45,14 @@ DB_URL = f'sqlite:///{DB_PATH}'
 
 # Initialize models with database URL
 user_model = UserModel()
-team_model = TeamModel()
+team_model = TeamModel(user_model)
 unit_model = UnitModel()
 lesson_model = LessonModel()
 lesson_component_model = LessonComponentModel()
 
 # Initialize controller instances
 user_controller = UserController(user_model)
-auth_controller = AuthController(user_model)
+auth_controller = AuthController(user_model, team_model)
 team_controller = TeamController(team_model, user_model)
 unit_controller = UnitController(unit_model, lesson_model, user_model)
 lesson_controller = LessonController(lesson_model, lesson_component_model, user_model, unit_model)

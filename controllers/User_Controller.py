@@ -10,24 +10,27 @@ class UserController(BaseController):
     
     def update(self):
         """Update user information."""
+        
         # Check user has required access level
         if self.get_current_user()['access'] < 3:
             flash('Unauthorized access', 'error')
             return redirect(url_for('teams.view'))
         
-        google_id = request.form.get('google_id')
-        team_id = request.form.get('team_id')
-        access = request.form.get('access')
-        
-        if not google_id:
+        new_team_id = request.form.get('team_id')
+        user_email=request.form.get('email')
+
+        if not user_email:
             flash('Email is required', 'error')
             return redirect(url_for('teams.view'))
         
-        user_info = {'google_id': google_id}
-        if team_id:
-            user_info['team_id'] = int(team_id)
-        if access:
-            user_info['access'] = int(access)
+        user_google_id=self.user_model.get(email=user_email)["data"]["google_id"]
+
+        
+        user_info = {'google_id': user_google_id}
+        if new_team_id:
+            user_info['team_id'] = int(new_team_id)
+        # if access:
+        #     user_info['access'] = int(access)
         
         result = self.user_model.update(user_info)
         if result['status'] == 'success':

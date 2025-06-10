@@ -15,10 +15,9 @@ class LessonComponentController(BaseController):
 
 
     
-    def view(self, user, unit_id, lesson_id, lesson_component_id):
+    def view(self, unit_id, lesson_id, lesson_component_id):
         """Show a specific lesson component."""
         current_user = self.get_current_user()
-        session['user'] = current_user
         
         # Get the lesson component, lesson and unit
         result = self.lesson_component_model.get(id=lesson_component_id)

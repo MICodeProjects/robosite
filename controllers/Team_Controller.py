@@ -13,7 +13,7 @@ class TeamController(BaseController):
         """Render the teams page."""
         # Get current user from user controller
         current_user = self.get_current_user()
-        
+
         # Get all teams
         result = self.team_model.get_all_teams()
         teams = result['data'] if result['status'] == 'success' else []
@@ -21,8 +21,14 @@ class TeamController(BaseController):
         # Get all users for admin section
         users_result = self.user_model.get_all()
         users = users_result['data'] if users_result['status'] == 'success' else []
+
+        # get user team name
+        user_team_id=current_user["team_id"]
+        print("user_team_id: ", user_team_id)
+        user_team_name = self.team_model.get(id=int(current_user["team_id"]))
+        print(f"self.team_model.get with id {current_user['team_id']} result is ", user_team_name)
         
-        return render_template('team.html', teams=teams, users=users, user=current_user)
+        return render_template('team.html', teams=teams, user_team_name=user_team_name["data"]["name"], users=users, user=current_user)
     
     def create(self):
         """Create a new team."""

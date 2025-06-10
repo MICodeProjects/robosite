@@ -44,10 +44,10 @@ class LessonComponentModel:
             print(f"Error initializing database: {str(e)}")
             raise
 
-    def exists(self, lesson_component: Optional[str] = None, id: Optional[int] = None) -> bool:
+    def exists(self, lesson_component: Optional[str] = None, id: Optional[int] = None) -> Dict:
         """Check if a lesson component exists by name or id"""
         if lesson_component is None and id is None:
-            return False
+            return {"status":"error", "data":'no lesson component name or id input'}
             
         session = self.Session()
         try:
@@ -56,17 +56,18 @@ class LessonComponentModel:
                 query = query.filter(LessonComponent.name == lesson_component)
             if id:
                 query = query.filter(LessonComponent.id == id)
-            return session.query(query.exists()).scalar()
+            return {"status":"success", "data":session.query(query.exists()).scalar()}
         finally:
             session.close()
 
     def create(self, component_info: Dict) -> Dict:
         """Create a new lesson component"""
-        try:
+        try:            
             if 'name' not in component_info or 'lesson_id' not in component_info:
                 return {"status": "error", "data": "Component name and lesson_id are required"}
                 
-            if self.exists(lesson_component=component_info['name']):
+            exists_result = self.exists(lesson_component=component_info['name'])
+            if exists_result["status"] == "success" and exists_result["data"]:
                 return {"status": "error", "data": f"Component {component_info['name']} already exists"}
                 
             session = self.Session()
@@ -169,11 +170,12 @@ class LessonComponentModel:
             
     def update(self, component_info: Dict) -> Dict:
         """Update a lesson component"""
-        try:
+        try:            
             if 'id' not in component_info:
                 return {"status": "error", "data": "Component ID is required"}
                 
-            if not self.exists(id=component_info['id']):
+            exists_result = self.exists(id=component_info['id'])
+            if exists_result["status"] == "success" and not exists_result["data"]:
                 return {"status": "error", "data": f"Component with id {component_info['id']} not found"}
                 
             session = self.Session()

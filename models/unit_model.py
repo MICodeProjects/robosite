@@ -33,30 +33,33 @@ class UnitModel:
             Base.metadata.create_all(self.engine)
             self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)  # Add expire_on_commit=False
             
-        except Exception as e:
+        except Exception as e:            
             print(f"Error initializing database: {str(e)}")
             raise
 
-    def exists(self, unit: Optional[str] = None, id: Optional[int] = None) -> bool:
+    def exists(self, unit: Optional[str] = None, id: Optional[int] = None) -> Dict:
         """Check if a unit exists by name or id"""
         if unit is None and id is None:
-            return False
+            return {"status": "error", "data": "No unit name or id input"}
 
         session = self.Session()
         try:
             query = session.query(Unit)
             if unit:
                 unit_exists = query.filter_by(name=unit).first() is not None
+                return {"status": "success", "data": unit_exists}
+
             else:
-                unit_exists = query.filter_by(id=id).first() is not None
-            return unit_exists
+                unit_exists = query.filter_by(id=id).first() is not None            
+                return {"status": "success", "data": unit_exists}
         finally:
             session.close()
 
     def create(self, unit_name: str) -> Dict:
         """Create a new unit"""
         try:
-            if self.exists(unit=unit_name):
+            exists_result = self.exists(unit=unit_name)
+            if exists_result["status"] == "success" and exists_result["data"]==True:
                 return {"status": "error", "data": f"Unit {unit_name} already exists"}
 
             session = self.Session()

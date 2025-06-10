@@ -20,18 +20,36 @@ class BaseController:
             },
             scopes=Keys.GOOGLE_SCOPES,
             redirect_uri=Keys.GOOGLE_REDIRECT_URI
-        )
-
+        )    
     def get_current_user(self):
-        """Get current user from session"""
+        """Get current user from session.
+            user_data{
+                name:str,
+                team_id:int,
+                email:str,
+                google_id:str,
+                team_name:str, 
+                access:int
+            }
+        """
         if 'user' in session:
-            # Optionally refresh from database if needed
-            user = self.user_model.get(email=session['user']['email'])
-            if user['status'] == 'success':
-                session['user'] = user['data']
-                return user['data']
+            # Check if user data contains necessary information
+            if 'email' in session['user']:
+                # Refresh from database if needed
+                user = self.user_model.get(email=session['user']['email'])
+                if user['status'] == 'success':
+                    session['user'] = user['data']
+                    return user['data']
+            elif 'google_id' in session['user']:
+                # Try to get by google_id instead
+                user = self.user_model.get(google_id=session['user']['google_id'])
+                if user['status'] == 'success':
+                    session['user'] = user['data']
+                    return user['data']
+            
+            # If we get here, something's wrong with the session data
             session.pop('user', None)
-        return {'email': None, 'team_id': None, 'access': 1}  # Default guest user
+        return {'email': None, 'team_id': None, 'name':'guest', 'team_name':"No team", "google_id":None, 'access': 1}  # Default guest user
 
     def require_access_level(self, required_level):
         """Check if current user has required access level"""
